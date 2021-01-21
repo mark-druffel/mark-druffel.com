@@ -13,7 +13,7 @@ window.initializeCodeFolding = function(show) {
   });
 
   // index for unique code element ids
-  var currentIndex = 1;
+  var currentIndex = 1; 
 
   // select all R code blocks
   var rCodeBlocks = $('pre.sourceCode, pre.r, pre.python, pre.bash, pre.sql, pre.cpp, pre.stan, pre.js');
@@ -21,9 +21,12 @@ window.initializeCodeFolding = function(show) {
 
     // create a collapsable div to wrap the code in
     var div = $('<div class="collapse r-code-collapse"></div>');
-  
+    
+    //Match color of highlight.js
+    div.attr('style', 'background-color: #F8F8F8;')
+    
     var id = 'rcode-643E0F36' + currentIndex++;
-    div.attr('id', id, 'style', "background-color: #F8F8F8;");
+    div.attr('id', id);
     $(this).before(div);
     $(this).detach().appendTo(div);
 

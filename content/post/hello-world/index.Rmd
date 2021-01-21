@@ -1,0 +1,29 @@
+---
+title: Hello World
+author: Mark Druffel
+date: '2019-12-21'
+slug: hello-world
+categories: []
+tags: []
+output:
+  blogdown::html_page:
+---
+
+## Hello World  
+At this year's RStudio Conf [David Robinson](http://varianceexplained.org/) discussed the importance of sharing work publicly in his talk ["The unreasonable effectiveness of public work."](https://resources.rstudio.com/rstudio-conf-2019/the-unreasonable-effectiveness-of-public-work). He attributed much of his own personal, professional success to the habit of sharing his work and encouraged others to adopt the habit. I recommend the talk to anyone, data scientist or not. Anyhow, I have procrastinated writing a blog for long enough. I attended the [Advanced RMarkdown Workshop](https://arm.rbind.io/)  at the conference and learned, among other things, the blogdown [blogdown](https://github.com/rstudio/blogdown) package so here's to getting started :beers: 
+
+## Blogdown Starter Kit
+The aforementioned [Advanced RMarkdown Workshop](https://arm.rbind.io/) is a great resource and per usual RStudio was kind enough to open source it. A few additional resource I used to get this site open and running were:
+
+* [Rbind Github Repo](https://github.com/rbind)
+* [Up & Running with blogdown](https://alison.rbind.io/post/2017-06-12-up-and-running-with-blogdown/)
+* [Making a Website Using Blogdown, Hugo, and GitHub Pages](https://amber.rbind.io/2016/12/19/website/)
+* [Rstudio Conf: Making Websites in R Markdown](https://arm.rbind.io/slides/blogdown.html#1)
+* [blogdown: Creating Websites with R Markdown](https://bookdown.org/yihui/blogdown/)
+* Setting up your blog with RStudio and blogdown:
+    + [Part I: Creating the blog](http://estebanmoro.org/post/2019-02-02-setting-up-your-blog-with-rstudio-and-blogdown-i-creating-the-blog/)
+    + [Part II: Workflow](http://estebanmoro.org/post/2019-02-01-setting-up-your-blog-with-rstudio-and-blogdown/)
+    + [Part III: Modify Your Theme](http://estebanmoro.org/post/2019-02-04-setting-up-your-blog-with-rstudio-and-blogdown-iii-modify-your-theme/)
+* [Markdown Basics](https://rmarkdown.rstudio.com/authoring_basics.html)
+* [R Markdown the Definitive Guide](https://bookdown.org/yihui/rmarkdown/)
+* [Hugo Emojify Cheatsheet](https://www.webfx.com/tools/emoji-cheat-sheet/)
