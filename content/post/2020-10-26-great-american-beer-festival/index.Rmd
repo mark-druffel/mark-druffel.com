@@ -1,7 +1,7 @@
 ---
 title: Great American Beer Festival
 author: Mark Druffel
-date: '2020-10-20'
+date: '2020-10-26'
 slug: great-american-beer-festival
 categories: ["tidy-tuesday"]
 tags: ["tidyverse", "reactable", "gganimate", "plotly", "crosstalk", "tidylo"]
@@ -117,7 +117,7 @@ I give the same boiler plate on every Tidy Tuesday, post so skip ahead if you ha
 In this installation, we're analyzing data from The Great American Beer Festival. The [Great American Beer Festival](https://en.wikipedia.org/wiki/Great_American_Beer_Festival) (GABF) is a three-day annual festival in Denver, Colorado. Judges evaluate several thousand beers entered by hundreds of breweries and award gold, silver, and bronze medals in 100+ categories - though not every medal is necessarily awarded in each category. GABF was founded in 1982 and had 22 participating breweries in the first year. To download the data I use the [tidytuesdayR](https://github.com/rfordatascience/tidytuesday) package.
 
 ```{r setup, include = F, message = F, warning = F, echo = T}
-knitr::opts_chunk$set(echo = TRUE, include = T, result = T, message = F, error = F, fig.width = 9)
+knitr::opts_chunk$set(echo = T, include = T, result = T, message = F, error = F, fig.width = 9)
 library(knitr)
 library(markUtils)
 library(tidyverse)
@@ -684,9 +684,9 @@ div(class = "reactable-tbl-view",
 ```
 
 ### Award Winning Categories by State 
-Cleaning up some of the text data would be cumbersome and the lack of full participation data kind of makes it not worth the effort in my mind. Given that, I'm going to focus on getting insights from the category data. Although it's shifted a lot over the years, it seems to be the cleanest by far. The [tidylo](https://github.com/juliasilge/tidylo) package can measure the which categories are most likely to get an award by state even and it deals with the different states have different numbers of awards. I recommend [Julia & Tyler's article](https://juliasilge.github.io/tidylo/articles/tidy_log_odds.html) on the package site if you want to learn more. 
+Cleaning up some of the text data would be cumbersome and I don't want to invest all that additional time at this point. Given that, I'm going to focus on getting insights from the category data. Although it's shifted a lot over the years, it seems to be the cleanest by far. The [tidylo](https://github.com/juliasilge/tidylo) package can measure the which categories are most likely to get an award by state even and it deals with the different states have different numbers of awards. I recommend [Julia & Tyler's article](https://juliasilge.github.io/tidylo/articles/tidy_log_odds.html) on the package site if you want to learn more. 
 
-The visual below shows which categories are most likely to get an award by state (bars that go to the right) and which categories are least likely (bars that go to the left). I'm a big fan of stouts, porters, and sours which tend to be hard to find in certain states. Wisconsin and Illinois being less represented in those categories makes a lot of sense given all the love they give to German beer. 
+The visual below shows which categories are most likely to get an award by state (bars that go to the right) and which categories are least likely (bars that go to the left) based on the historical data. I'm a big fan of stouts, porters, and sours which tend to be hard to find in certain states. Wisconsin and Illinois being less represented in those categories makes a lot of sense given all the love they give to German beer. 
 ```{r, top_beers}
 gabf %>% 
   filter(fct_lump(state, 9) != "Other",
@@ -709,6 +709,8 @@ gabf %>%
 ## Wrapping Up
 This data set would have been a lot more interesting if we had the full participation list. That being said, there were some interesting findings. 
 
-I went down a few rabbit holes that I did not write-up. I built a sunburst of the year, brewery, category, and beers. It was too difficult to read even with factor lumping because the dispersion in the data. I tried to use a crosstalk SharedData object to link the sunburst to another higher view, but it turns out [sunburstR](https://github.com/timelyportfolio/sunburstR) does not support crosstalk at the moment (side note, if you have not used sunburstR it makes beautiful d3.js sunbursts with very little effort). I also tried to figure out how to clean up the character issues such as ä, but I couldn't find any simple tools to use for that specific issue. 
+I went down a few rabbit holes that I did not write-up. I built a [sunburst](https://en.wikipedia.org/wiki/Pie_chart#Ring) of the year, brewery, category, and beers just to explore the data more easily, but it was too difficult to read even after applying factor lumping - the data is just too disperse (i.e. too many unique values for each category). In order to make the sunburst usable I thought it would be helpful to build another cross-widget interaction to navigate the first few categories so they could be left off of the sunburst, but but it turns out [sunburstR](https://github.com/timelyportfolio/sunburstR) does not support crosstalk at the moment (side note, if you have not used sunburstR it makes beautiful d3.js sunbursts with very little effort). I had a quick conversation with one of the package maintainers and it sounds like it would be a significant effort to add that functionality - would be a super interesting project. I also tried to figure out how to clean up the character issues such as ä, but I couldn't find any simple tools to use for that specific issue - would be interesting to research further.
 
 Aside from those rabbit holes, the state rankings table provided interesting insights regarding awards per capita with Colorado way out in front. The TIE fighter plot showed that some lesser expected states including the Carolinas are catching up in the number of awards. The award winning categories by state log odds plot showed that, by in large, states win awards in different categories when comparing to each other. 
+
+Thanks for reading and if you have any feedback please do post it below or feel free to reach out to me directly (contact info is at the bottom)!
