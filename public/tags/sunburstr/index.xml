@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>sunburstR on Mark Druffel</title>
+    <link>/tags/sunburstr/</link>
+    <description>Recent content in sunburstR on Mark Druffel</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 20 Oct 2020 00:00:00 +0000</lastBuildDate><atom:link href="/tags/sunburstr/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Great American Beer Festival</title>
+      <link>/2020/great-american-beer-festival/</link>
+      <pubDate>Tue, 20 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/2020/great-american-beer-festival/</guid>
+      <description>BackgroundTidy TuesdayThe Great American Beer FestivalAnalysisState Rankings TableAnimated MapInteractive TIE Fighter Plot &amp;amp; Line ChartBrewery, Category, &amp;amp; Beer TableComparing Category Awards by State/* kableExtra tables &amp; skimr */table {font-size: 13px;width: 750px;margin: auto; border-top: 1px solid #666; border-bottom: 1px solid #666; }table thead th { font-size: 14px;border-bottom: 1px solid #ddd; }th, td { padding: 10px; }tr:hover {background-color: #F8F8F8;}/* reactable *//* Styles for the column headers */reactable-header {border-bottom: 2px solid #555;font-size: 14px;font-weight: 400;}reactable-header:hover {background-color: #eee;}/* bar-charts */.</description>
+    </item>
+    
+  </channel>
+</rss>

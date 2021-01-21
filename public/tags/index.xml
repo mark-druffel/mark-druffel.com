@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tags on Mark Druffel</title>
+    <link>https://www.mark-druffel.com/tags/</link>
+    <description>Recent content in Tags on Mark Druffel</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 20 Oct 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://www.mark-druffel.com/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>crosstalk</title>
+      <link>https://www.mark-druffel.com/tags/crosstalk/</link>
+      <pubDate>Tue, 20 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.mark-druffel.com/tags/crosstalk/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>gganimate</title>
+      <link>https://www.mark-druffel.com/tags/gganimate/</link>
+      <pubDate>Tue, 20 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.mark-druffel.com/tags/gganimate/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>plotly</title>
+      <link>https://www.mark-druffel.com/tags/plotly/</link>
+      <pubDate>Tue, 20 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.mark-druffel.com/tags/plotly/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>reactable</title>
+      <link>https://www.mark-druffel.com/tags/reactable/</link>
+      <pubDate>Tue, 20 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.mark-druffel.com/tags/reactable/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>tidylo</title>
+      <link>https://www.mark-druffel.com/tags/tidylo/</link>
+      <pubDate>Tue, 20 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.mark-druffel.com/tags/tidylo/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>tidyverse</title>
+      <link>https://www.mark-druffel.com/tags/tidyverse/</link>
+      <pubDate>Tue, 20 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.mark-druffel.com/tags/tidyverse/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

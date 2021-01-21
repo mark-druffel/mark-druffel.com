@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.80.0" />
+
+
+<title>Great American Beer Festival - Mark Druffel</title>
+<meta property="og:title" content="Great American Beer Festival - Mark Druffel">
+
+
+  <link href='/favicon.ico' rel='icon' type='image/x-icon'/>
+
+
+
+  
+
+
+
+
+
+
+
+
+<link href='//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css' rel='stylesheet' type='text/css' />
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+<script async src="https://use.fontawesome.com/32c3d13def.js"></script>
+
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="site-header">
+        <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/oregon.png"
+         width="50"
+         height="50"
+         alt="Home">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/about/">About</a></li>
+    
+    <li><a href="/post/">Blog</a></li>
+    
+    <li><a href="https://www.cv.mark-druffel.com/">CV</a></li>
+    
+  </ul>
+</nav>
+
+      </header>
+
+
+<main class="content" role="main">
+
+     <h1 class="article-title">Great American Beer Festival</h1>
+
+    
+    <span class="article-meta">
+      Mark Druffel / 20 Oct 2020 / 3 min read <br>
+      
+      
+      Categories:
+      
+      <a href='/categories/tidy-tuesday'>tidy-tuesday</a>
+      <br>
+      
+      
+      
+      Tags:
+      
+      <a href='/tags/tidyverse'>tidyverse</a>
+      
+      <a href='/tags/reactable'>reactable</a>
+      
+      <a href='/tags/plotly'>plotly</a>
+      
+      <a href='/tags/crosstalk'>crosstalk</a>
+      
+      <a href='/tags/d3r'>d3r</a>
+      
+      <a href='/tags/sunburstr'>sunburstR</a>
+      
+      <a href='/tags/tidylo'>tidylo</a>
+      <br>
+      
+      <br>
+    </span>
+    
+    
+    <div class="article-content">
+      
+
+<div id="TOC">
+<ul>
+<li><a href="#background">Background</a><ul>
+<li><a href="#tidy-tuesday">Tidy Tuesday</a></li>
+<li><a href="#the-great-american-beer-festival">The Great American Beer Festival</a></li>
+</ul></li>
+<li><a href="#analysis">Analysis</a><ul>
+<li><a href="#review-the-dataset">Review the dataset</a></li>
+</ul></li>
+</ul>
+</div>
+
+<div id="background" class="section level1">
+<h1>Background</h1>
+<div id="tidy-tuesday" class="section level2">
+<h2>Tidy Tuesday</h2>
+<p>I give the same boiler plate on every Tidy Tuesday, post so skip ahead if you have read any. <a href="https://github.com/rfordatascience/tidytuesday">Tidy Tuesday</a> is a weekly social data project in the R for Data Science community where R users explore a new dataset and share their findings. If you’re an R user (or aspiring) I highly recommend participating. A few specific Tidy Tuesday resources I’d recommend are <a href="https://www.youtube.com/channel/UCeiiqmVK07qhY-wvg3IZiZQ">David Robinson’s Tidy Tuesday screen casts</a>, <a href="https://twitter.com/search?q=%23TidyTuesday&amp;src=typeahead_click">Twitter #TidyTuesday</a>, and the <a href="https://www.tidytuesday.com/">TidyTuesday podcast</a> with Jon Harmon. All Tidy Tuesday datasets are available on <a href="https://github.com/rfordatascience/tidytuesday">Github</a>.</p>
+</div>
+<div id="the-great-american-beer-festival" class="section level2">
+<h2>The Great American Beer Festival</h2>
+<p>In this installation, we’re analyzing data from The Great American Beer Festival. The <a href="https://en.wikipedia.org/wiki/Great_American_Beer_Festival">Great American Beer Festival</a> (GABF) is a three-day annual festival in Denver, Colorado. Judges evaluate several thousand beers entered by hundreds of breweries and award gold, silver, and bronze medals in 100+ categories - though not every medal is necessarily awarded in each category. GABF was founded in 1982 and had 22 participating breweries in the first year. To download the data I use the <a href="https://github.com/rfordatascience/tidytuesday">tidytuesdayR</a> package.</p>
+</div>
+</div>
+<div id="analysis" class="section level1">
+<h1>Analysis</h1>
+<div id="review-the-dataset" class="section level2">
+<h2>Review the dataset</h2>
+<p>The GABF data set has an observation (row) for each beer that received an award, attributes about that beer, the award received, and the year. First thing I did was make a summary of the data with <a href="https://docs.ropensci.org/skimr/">skimr</a>. The output allowed me to quickly get an understanding of the dataset and identify some data cleaning tasks. The data types of the columns are all character, except year which is double. I converted <code>medal</code> to factor so I could more easily analyze it as an ordinal attribute. State has 52 unique values which led me to find duplicate records due to casing (<code>AK</code> &amp; <code>Ak</code> and <code>WA</code> &amp; <code>wa</code>). I changed the casing in these observations bringing the number of states to 50, including Washington D.C. That means one of the states has never won an award.</p>
+<pre class="r"><code>skimr::skim(gabf)</code></pre>
+<table>
+<caption><span id="tab:skim">Table 1: </span>Data summary</caption>
+<tbody>
+<tr class="odd">
+<td align="left">Name</td>
+<td align="left">gabf</td>
+</tr>
+<tr class="even">
+<td align="left">Number of rows</td>
+<td align="left">4970</td>
+</tr>
+<tr class="odd">
+<td align="left">Number of columns</td>
+<td align="left">7</td>
+</tr>
+<tr class="even">
+<td align="left">_______________________</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Column type frequency:</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">character</td>
+<td align="left">6</td>
+</tr>
+<tr class="odd">
+<td align="left">numeric</td>
+<td align="left">1</td>
+</tr>
+<tr class="even">
+<td align="left">________________________</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Group variables</td>
+<td align="left">None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: character</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="right">min</th>
+<th align="right">max</th>
+<th align="right">empty</th>
+<th align="right">n_unique</th>
+<th align="right">whitespace</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">medal</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">6</td>
+<td align="right">0</td>
+<td align="right">3</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">beer_name</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">2</td>
+<td align="right">89</td>
+<td align="right">0</td>
+<td align="right">3811</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">brewery</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">6</td>
+<td align="right">58</td>
+<td align="right">0</td>
+<td align="right">1859</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">city</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">3</td>
+<td align="right">44</td>
+<td align="right">0</td>
+<td align="right">803</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">state</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">0</td>
+<td align="right">52</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">category</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">76</td>
+<td align="right">0</td>
+<td align="right">515</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: numeric</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="right">mean</th>
+<th align="right">sd</th>
+<th align="right">p0</th>
+<th align="right">p25</th>
+<th align="right">p50</th>
+<th align="right">p75</th>
+<th align="right">p100</th>
+<th align="left">hist</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">year</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">2007.88</td>
+<td align="right">8.68</td>
+<td align="right">1987</td>
+<td align="right">2002</td>
+<td align="right">2009</td>
+<td align="right">2015</td>
+<td align="right">2020</td>
+<td align="left">▂▃▅▆▇</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>gabf &lt;- gabf %&gt;% 
+  mutate(medal = fct_relevel(medal, c(&quot;Bronze&quot;, &quot;Silver&quot;))) %&gt;% 
+  mutate(state = str_to_upper(state))</code></pre>
+<p>I visualized the number of awards over time and saw the dataset starts in 1987 (27 awards) and ends in 2020 (218 awards). Growth appears to be linear with only a few years that ever decreased.</p>
+<pre class="r"><code>gabf %&gt;% 
+  group_by(year) %&gt;% 
+  tally() %&gt;% 
+  ggplot(aes(x = year, y = n)) +
+  geom_col(width = .75) +
+  labs(y = &quot;Awards&quot;, x = &quot;Year&quot;, title = &quot;Total Awards by Year&quot;)</code></pre>
+<p><img src="/great-american-beer-festival/index_files/figure-html/award_by_year_bar-1.png" width="1728" /></p>
+</div>
+</div>
+
+    </div>
+  </article>
+
+  
+<section id="comments">
+  <div id="disqus_thread"></div>
+  <script>
+  var disqus_config = function () {
+  
+  };
+  (function() {
+    var inIFrame = function() {
+      var iframe = true;
+      try { iframe = window.self !== window.top; } catch (e) {}
+      return iframe;
+    };
+    if (inIFrame()) return;
+    var d = document, s = d.createElement('script');
+    s.src = '//www-mark-druffel-com.disqus.com/embed.js'; s.async = true;
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+  })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</section>
+
+
+
+</main>
+
+      <footer class="footer">
+        <ul class="footer-links">
+          
+          <li><a href="https://github.com/mark-druffel"><i class="fa fa-github" aria-hidden="true" title="Github"></i><span class="sr-only">Github</span></a></li>
+          <li><a href="https://twitter.com/markduffel"><i class="fa fa-twitter" aria-hidden="true" title="Twitter"></i><span class="sr-only">Twitter</span></a></li>
+          <li><a href="https://www.linkedin.com/in/markdruffel"><i class="fa fa-linkedin" aria-hidden="true" title="LinkedIn"></i><span class="sr-only">LinkedIn</span></a></li>
+          
+          </li>
+          <li>
+            <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png" alt="Img link to Hugo website" width="22" height="22"></a>
+            <a href="https://bookdown.org/yihui/blogdown/" class="footer-links-kudos">Via <img src="/images/blogdown-logo.png" width="22" height="22"></a>
+          </li>
+        </ul>
+      </footer>
+
+    </div>
+    
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/r.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/yaml.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/tex.min.js"></script>
+<script>hljs.configure({languages: []}); hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+
+    
+  </body>
+</html>
+
