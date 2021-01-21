@@ -7,6 +7,7 @@ categories: []
 tags: []
 output:
   blogdown::html_page:
+    toc: false
 ---
 
 ## Hello World  
@@ -27,3 +28,9 @@ The aforementioned [Advanced RMarkdown Workshop](https://arm.rbind.io/) is a gre
 * [Markdown Basics](https://rmarkdown.rstudio.com/authoring_basics.html)
 * [R Markdown the Definitive Guide](https://bookdown.org/yihui/rmarkdown/)
 * [Hugo Emojify Cheatsheet](https://www.webfx.com/tools/emoji-cheat-sheet/)
+
+All the above resources should have anyone well informed on blogdown, but for posterity I recommend following [Alison Hill's blog](https://alison.rbind.io) as there are sure to be updates and she is an amazing resource. Happy blogging! 
+
+<p align="center">
+![](https://media.giphy.com/media/lCbSAbRrFEfkY/giphy.gif){width=500px}
+</p>

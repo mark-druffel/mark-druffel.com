@@ -16,5 +16,14 @@
       <description>BackgroundTidy TuesdayThe Great American Beer FestivalAnalysisState Rankings TableAnimated MapInteractive TIE Fighter Plot &amp;amp; Line ChartBrewery, Category, &amp;amp; Beer TableAward Winning Categories by StateWrapping Up/* kableExtra tables &amp; skimr */table {font-size: 13px;width: 850px;margin: auto; border-top: 1px solid #666; border-bottom: 1px solid #666; }table thead th { font-size: 14px;border-bottom: 1px solid #ddd; }th, td { padding: 10px; }tr:hover {background-color: #F8F8F8;}/* reactable *//* Styles for the column headers */.</description>
     </item>
     
+    <item>
+      <title>Hello World</title>
+      <link>https://www.mark-druffel.com/2019/hello-world/</link>
+      <pubDate>Sat, 21 Dec 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.mark-druffel.com/2019/hello-world/</guid>
+      <description>Hello WorldAt this year’s RStudio Conf David Robinson discussed the importance of sharing work publicly in his talk “The unreasonable effectiveness of public work.”. He attributed much of his own personal, professional success to the habit of sharing his work and encouraged others to adopt the habit. I recommend the talk to anyone, data scientist or not. Anyhow, I have procrastinated writing a blog for long enough. I attended the Advanced RMarkdown Workshop at the conference and learned, among other things, the blogdown blogdown package so here’s to getting started 🍻</description>
+    </item>
+    
   </channel>
 </rss>
