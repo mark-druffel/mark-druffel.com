@@ -1,0 +1,25 @@
+---
+title: "About Me"
+---
+``` css
+.center-img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+```
+Hi, I'm Mark Druffel!  
+
+I'm a data scientist, I `mutate` :coffee: + :beer: into `r fontawesome::fa("r-project", fill = "steelblue")` code. 
+
+### Motivation   
+I have been working in analytics since ~2013. My undergraduate degree was in business and I started my career in financial and IT audit :sleeping: After a few years, I was lucky enough to land a role managing a Business Intelligence team and my journey in analytics began. Like many data scientists, I started out without the background or formal training so I spent a lot of time learning. I set up this blog as a tool to reflect on that process and share it with the community. I hope the content will be useful to other newcomers and encourage collaboration. If you have any feedback or want to discuss any of the topics please feel free to reach out!  
+
+### A bit about me   
+I grew up in Cincinnati, Ohio but I moved to Portland, Oregon by way of Chicago. I work at a boutique management consulting company, [Propeller](https://propellerconsulting.com/), where I help clients better leverage data in their organizations. The opinions on this site are my own. I am the author of a few small R packages including [harvestR](https://propellerpdx.github.io/harvestR/) & [dataPipeline](https://propellerpdx.github.io/dataPipeline/) and enjoy discussing data science and technology whenever I get the chance. I am also a sisyphean rock-climber and a cooking / travel enthusiast :mount_fuji:
+
+-Mark 
+  
+  
+
+<img src="/images/bitmoji.png" alt="bitmoji" title="my_bitmoji" width="150" height="150" class="center-img"/>

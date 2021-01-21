@@ -1,0 +1,49 @@
+baseurl: "https://www.mark-druffel.com/"
+languageCode: en-us
+title: Mark Druffel
+theme: hugo-lithium
+googleAnalytics: ''
+disqusShortname: 'www-mark-druffel-com'
+enableRobotsTXT: true
+canonifyURLs: true
+enableEmoji: true
+# Set to true to disable code folding
+disable_codefolding: false
+# Set to "hide" or "show" all codes by default
+codefolding_show: hide
+codefolding_nobutton: true
+ignoreFiles: ["\\.Rmd$", "_cache$", "\\.knit\\.md$","\\.utf8\\.md$"]
+permalinks:
+  post: /:year/:slug/
+menu:
+  main:
+    - name: "About"
+      url: /about/
+      weight: 1
+    - name: "Blog"
+      url: /post/
+      weight: 2
+    - name: "CV"
+      url: https://www.cv.mark-druffel.com/
+      weight: 5
+params:
+  description: "Data scientist, askew from central tendencies"
+  MathJaxCDN: //cdnjs.cloudflare.com/ajax/libs
+  MathJaxVersion: 2.7.5
+  customCSS: []
+  customJS: ["js/fix-footnote.js", "js/codefolding.js"]
+  favicon: favicon.ico
+  disable_highlight: false
+  highlightjsCDN: //cdnjs.cloudflare.com/ajax/libs
+  highlightjsLang: ["r", "yaml", "tex"]
+  highlightjsTheme: github
+  highlightjsVersion: 9.12.0
+  social:
+    github: "mark-druffel"
+    twitter: "markduffel"
+    linkedin: "markdruffel"
+  logo:
+    alt: Home
+    height: 50
+    url: oregon.png
+    width: 50 
