@@ -6,11 +6,11 @@
     <description>Recent content in reactable on Mark Druffel</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 20 Oct 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://www.mark-druffel.com/tags/reactable/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Mon, 26 Oct 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://www.mark-druffel.com/tags/reactable/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Great American Beer Festival</title>
       <link>https://www.mark-druffel.com/2020/great-american-beer-festival/</link>
-      <pubDate>Tue, 20 Oct 2020 00:00:00 +0000</pubDate>
+      <pubDate>Mon, 26 Oct 2020 00:00:00 +0000</pubDate>
       
       <guid>https://www.mark-druffel.com/2020/great-american-beer-festival/</guid>
       <description>BackgroundTidy TuesdayThe Great American Beer FestivalAnalysisState Rankings TableAnimated MapInteractive TIE Fighter Plot &amp;amp; Line ChartBrewery, Category, &amp;amp; Beer TableAward Winning Categories by StateWrapping Up/* kableExtra tables &amp; skimr */table {font-size: 13px;width: 850px;margin: auto; border-top: 1px solid #666; border-bottom: 1px solid #666; }table thead th { font-size: 14px;border-bottom: 1px solid #ddd; }th, td { padding: 10px; }tr:hover {background-color: #F8F8F8;}/* reactable *//* Styles for the column headers */.</description>
