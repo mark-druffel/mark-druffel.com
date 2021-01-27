@@ -14,7 +14,7 @@ output:
 ```{css, echo = F}
 /* kableExtra tables & skimr */
 table {
-   font-size: 13px;
+   font-size: 12px;
    width: 850px;
    margin: auto; 
    border-top: 1px solid #666; 
@@ -25,7 +25,7 @@ table thead th {
   border-bottom: 1px solid #ddd; 
 }
 th, td { 
-  padding: 10px; 
+  padding: 1px; 
 }
 tr:hover {
   background-color: #F8F8F8;
@@ -116,8 +116,8 @@ I give the same boiler plate on every Tidy Tuesday, post so skip ahead if you ha
 ### The Great American Beer Festival
 In this installation, we're analyzing data from The Great American Beer Festival. The [Great American Beer Festival](https://en.wikipedia.org/wiki/Great_American_Beer_Festival) (GABF) is a three-day annual festival in Denver, Colorado. Judges evaluate several thousand beers entered by hundreds of breweries and award gold, silver, and bronze medals in 100+ categories - though not every medal is necessarily awarded in each category. GABF was founded in 1982 and had 22 participating breweries in the first year. To download the data I use the [tidytuesdayR](https://github.com/rfordatascience/tidytuesday) package.
 
-```{r setup, include = F, message = F, warning = F, echo = T}
-knitr::opts_chunk$set(echo = T, include = T, result = T, message = F, error = F, fig.width = 9)
+```{r setup, include=F, message=F, warning=F, echo=T}
+knitr::opts_chunk$set(echo = T, message = F, warning = F, error = F, fig.width = 9)
 library(knitr)
 library(markUtils)
 library(tidyverse)

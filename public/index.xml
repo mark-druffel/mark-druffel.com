@@ -22,7 +22,7 @@
       <pubDate>Sat, 11 Jan 2020 00:00:00 +0000</pubDate>
       
       <guid>https://www.mark-druffel.com/2020/french-train-delays/</guid>
-      <description>/* kableExtra tables &amp; skimr */table {font-size: 13px;width: 850px;margin: auto; border-top: 1px solid #666; border-bottom: 1px solid #666; }table thead th { font-size: 14px;border-bottom: 1px solid #ddd; }th, td { padding: 10px; }tr:hover {background-color: #F8F8F8;}skimr::skim(full_trains)Table 1: Data summaryNamefull_trainsNumber of rows5462Number of columns27_______________________Column type frequency:character4logical2numeric21________________________Group variablesNoneVariable type: character</description>
+      <description>BackgroundTidy TuesdayFrench Trains Data/* kableExtra tables &amp; skimr */table {font-size: 13px;width: 850px;margin: auto; border-top: 1px solid #666; border-bottom: 1px solid #666; }table thead th { font-size: 14px;border-bottom: 1px solid #ddd; }th, td { padding: 10px; }tr:hover {background-color: #F8F8F8;}BackgroundTidy TuesdayI give the same boiler plate on every Tidy Tuesday, post so skip ahead if you have read any.</description>
     </item>
     
     <item>
