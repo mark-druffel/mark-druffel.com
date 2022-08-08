@@ -23,9 +23,9 @@ menu:
     - name: "Blog"
       url: /post/
       weight: 2
-    - name: "CV"
-      url: https://www.cv.mark-druffel.com/
-      weight: 5
+    - name: "Resume"
+      url: /resume/
+      weight: 3
 params:
   description: "Data scientist, askew from central tendencies"
   MathJaxCDN: //cdnjs.cloudflare.com/ajax/libs

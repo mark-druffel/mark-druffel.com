@@ -1,7 +1,7 @@
 ---
 title: "About Me"
 ---
-``` css
+``` {css, echo = F}
 .center-img {
   display: block;
   margin-left: auto;
@@ -13,10 +13,12 @@ Hi, I'm Mark Druffel!
 I'm a data scientist, I `mutate` :coffee: + :beer: into `r fontawesome::fa("r-project", fill = "steelblue")` code. 
 
 ### Motivation   
-I have been working in analytics since ~2013. My undergraduate degree was in business and I started my career in financial and IT audit :sleeping: After a few years, I was lucky enough to land a role managing a Business Intelligence team and my journey in analytics began. Like many data scientists, I started out without the background or formal training so I spent a lot of time learning. I set up this blog as a tool to reflect on that process and share it with the community. I hope the content will be useful to other newcomers and encourage collaboration. If you have any feedback or want to discuss any of the topics please feel free to reach out!  
+I have been working in analytics since ~2013. My undergraduate degree was in business and I started my career in financial and IT audit :sleeping: After a few years, I was lucky enough to land a role managing a Business Intelligence team and my journey in analytics began. Like many data scientists, I started without formal training so I spent a lot of time learning. I set up this blog as a tool to reflect on that process and share it with the community. I hope the content will be useful to other newcomers and encourage collaboration. If you have any feedback or want to discuss any of the topics please feel free to reach out!  
 
 ### A bit about me   
-I grew up in Cincinnati, Ohio but I moved to Portland, Oregon by way of Chicago. I work at a boutique management consulting company, [Propeller](https://propellerconsulting.com/), where I help clients better leverage data in their organizations. The opinions on this site are my own. I am the author of a few small R packages including [harvestR](https://propellerpdx.github.io/harvestR/) & [dataPipeline](https://propellerpdx.github.io/dataPipeline/) and enjoy discussing data science and technology whenever I get the chance. I am also a sisyphean rock-climber and a cooking / travel enthusiast :mount_fuji:
+I grew up in Cincinnati, but I moved to Portland, OR by way of Chicago with my wonderful wife Brittany :simple_smile: Currently, I am working at start-up called [DocStation](https://docstation.co/) where we’re building a platform to enable pharmacists to provide value-based care. At DocStation, I have the privilege to work with very smart, seasoned engineers who have graciously helped me to elevate my engineering skills while continuing to become a better analyst. Aside from my work at DocStation, I am active in the local R user group and I'm the author of a few small R packages including [harvestR](https://propellerpdx.github.io/harvestR/). 
+
+In my free-time, I enjoy cooking and getting outdoor to hike, rock climb, and see all the beauty of the Pacific-Northwest :mount_fuji:
 
 -Mark 
   
