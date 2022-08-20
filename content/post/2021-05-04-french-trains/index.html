@@ -1,0 +1,1093 @@
+---
+title: French Train Delays
+author: Mark Druffel
+date: '2021-05-04'
+slug: french-train-delays
+categories: ["tidy-tuesday"]
+tags: ["tidyverse", "ggforce", "slickR"]
+output:
+  blogdown::html_page:
+    toc: true
+    toc_depth: 3
+---
+
+<script src="{{< blogdown/postref >}}index_files/htmlwidgets/htmlwidgets.js"></script>
+<script src="{{< blogdown/postref >}}index_files/jquery/jquery.min.js"></script>
+<link href="{{< blogdown/postref >}}index_files/leaflet/leaflet.css" rel="stylesheet" />
+<script src="{{< blogdown/postref >}}index_files/leaflet/leaflet.js"></script>
+<link href="{{< blogdown/postref >}}index_files/leafletfix/leafletfix.css" rel="stylesheet" />
+<script src="{{< blogdown/postref >}}index_files/proj4/proj4.min.js"></script>
+<script src="{{< blogdown/postref >}}index_files/Proj4Leaflet/proj4leaflet.js"></script>
+<link href="{{< blogdown/postref >}}index_files/rstudio_leaflet/rstudio_leaflet.css" rel="stylesheet" />
+<script src="{{< blogdown/postref >}}index_files/leaflet-binding/leaflet.js"></script>
+
+<div id="TOC">
+<ul>
+<li><a href="#background" id="toc-background">Background</a>
+<ul>
+<li><a href="#tidy-tuesday" id="toc-tidy-tuesday">Tidy Tuesday</a></li>
+<li><a href="#french-trains-data" id="toc-french-trains-data">French Trains Data</a></li>
+</ul></li>
+<li><a href="#analysis" id="toc-analysis">Analysis</a>
+<ul>
+<li><a href="#networking" id="toc-networking">Networking</a></li>
+<li><a href="#geospatial" id="toc-geospatial">Geospatial</a></li>
+</ul></li>
+<li><a href="#wrap-up" id="toc-wrap-up">Wrap Up</a></li>
+</ul>
+</div>
+
+<style type="text/css">
+/* kableExtra tables & skimr */
+table {
+   font-size: 12px;
+   width: 850px;
+   margin: auto; 
+   border-top: 1px solid #666; 
+   border-bottom: 1px solid #666; 
+}
+table thead th { 
+  font-size: 14px;
+  border-bottom: 1px solid #ddd; 
+}
+th, td { 
+  padding-top: 1px;
+  padding-bottom: 1px;
+  padding-left: 3px;
+  padding-right: 3px;
+}
+tr:hover {
+  background-color: #F8F8F8;
+}
+</style>
+<div id="background" class="section level2">
+<h2>Background</h2>
+<div id="tidy-tuesday" class="section level3">
+<h3>Tidy Tuesday</h3>
+<p>I give the same boiler plate on every Tidy Tuesday, post so skip ahead if you have read any. <a href="https://github.com/rfordatascience/tidytuesday">Tidy Tuesday</a> is a weekly social data project in the R for Data Science community where R users explore a new dataset and share their findings. If you’re an R user (or aspiring) I highly recommend participating. A few specific Tidy Tuesday resources I’d recommend are <a href="https://www.youtube.com/channel/UCeiiqmVK07qhY-wvg3IZiZQ">David Robinson’s Tidy Tuesday screen casts</a> and <a href="https://twitter.com/search?q=%23TidyTuesday&amp;src=typeahead_click">Twitter #TidyTuesday</a>. All Tidy Tuesday datasets are available on <a href="https://github.com/rfordatascience/tidytuesday">Github</a>.</p>
+</div>
+<div id="french-trains-data" class="section level3">
+<h3>French Trains Data</h3>
+<p>In this installation, I’m analyzing french trains data from <a href="https://en.wikipedia.org/wiki/TGV">TGV</a>, France’s inter-city high-speed rail service. This is an older Tidy Tuesday data set, but it looks like a fun one and I’ve been wanting to spend some time learning a few networking packages. The TGV has been in operation since the 80’s and mostly goes throughout France, although a few legs are international. The TGV has data services that provide information about past train service with some documentation <a href="https://ressources.data.sncf.com/explore/dataset/regularite-mensuelle-tgv-aqst/information/">here</a>. To download the data I use the <a href="https://github.com/rfordatascience/tidytuesday">tidytuesdayR</a> package.</p>
+</div>
+</div>
+<div id="analysis" class="section level2">
+<h2>Analysis</h2>
+<p>We can summarize the data set with <a href="https://docs.ropensci.org/skimr/">skimr</a>, which provides a high-level understanding of the data. This data set has ~5.4k observations and 27 attributes. Most of the data is numeric and a number of columns start with <code>num_</code> and <code>avg_</code> which indicates that the data is aggregated. Most of the attributes have records for all observations (<code>n_missing</code>). The <code>num_</code> fields are all counts so those should never be missing, meaning we can replace missing records with zero. The service attribute is missing 1.4k observations, but it’s a category of either national or international - should be easy to impute based on the <code>departure_station</code> and <code>arrival_station</code>. The 6 numeric attributes with names that start with <code>delay_cause_</code> are all missing 3 percent of the observations. Rows missing <code>delay_cause_</code> appear to be legs that had no delays. The <code>comment_delays_on_arrival</code> attribute is a comments field so it’s reasonable to have so many missing.</p>
+<pre class="r"><code>skimr::skim(full_trains)</code></pre>
+<table>
+<caption><span id="tab:skim">Table 1: </span>Data summary</caption>
+<tbody>
+<tr class="odd">
+<td align="left">Name</td>
+<td align="left">full_trains</td>
+</tr>
+<tr class="even">
+<td align="left">Number of rows</td>
+<td align="left">5462</td>
+</tr>
+<tr class="odd">
+<td align="left">Number of columns</td>
+<td align="left">27</td>
+</tr>
+<tr class="even">
+<td align="left">_______________________</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Column type frequency:</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">character</td>
+<td align="left">4</td>
+</tr>
+<tr class="odd">
+<td align="left">logical</td>
+<td align="left">2</td>
+</tr>
+<tr class="even">
+<td align="left">numeric</td>
+<td align="left">21</td>
+</tr>
+<tr class="odd">
+<td align="left">________________________</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">Group variables</td>
+<td align="left">None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: character</strong></p>
+<table style="width:100%;">
+<colgroup>
+<col width="30%" />
+<col width="11%" />
+<col width="16%" />
+<col width="4%" />
+<col width="5%" />
+<col width="7%" />
+<col width="10%" />
+<col width="12%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="right">min</th>
+<th align="right">max</th>
+<th align="right">empty</th>
+<th align="right">n_unique</th>
+<th align="right">whitespace</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">service</td>
+<td align="right">1430</td>
+<td align="right">0.74</td>
+<td align="right">8</td>
+<td align="right">13</td>
+<td align="right">0</td>
+<td align="right">2</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">departure_station</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">4</td>
+<td align="right">30</td>
+<td align="right">0</td>
+<td align="right">59</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">arrival_station</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">4</td>
+<td align="right">30</td>
+<td align="right">0</td>
+<td align="right">59</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">comment_delays_on_arrival</td>
+<td align="right">3921</td>
+<td align="right">0.28</td>
+<td align="right">10</td>
+<td align="right">2678</td>
+<td align="right">0</td>
+<td align="right">681</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: logical</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="right">mean</th>
+<th align="left">count</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">comment_cancellations</td>
+<td align="right">5462</td>
+<td align="right">0</td>
+<td align="right">NaN</td>
+<td align="left">:</td>
+</tr>
+<tr class="even">
+<td align="left">comment_delays_at_departure</td>
+<td align="right">5462</td>
+<td align="right">0</td>
+<td align="right">NaN</td>
+<td align="left">:</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: numeric</strong></p>
+<table>
+<colgroup>
+<col width="27%" />
+<col width="8%" />
+<col width="11%" />
+<col width="6%" />
+<col width="5%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="5%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="right">mean</th>
+<th align="right">sd</th>
+<th align="right">p0</th>
+<th align="right">p25</th>
+<th align="right">p50</th>
+<th align="right">p75</th>
+<th align="right">p100</th>
+<th align="left">hist</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">year</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">2016.52</td>
+<td align="right">1.12</td>
+<td align="right">2015.00</td>
+<td align="right">2016.00</td>
+<td align="right">2017.00</td>
+<td align="right">2018.00</td>
+<td align="right">2018.00</td>
+<td align="left">▇▇▁▇▇</td>
+</tr>
+<tr class="even">
+<td align="left">month</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">6.37</td>
+<td align="right">3.39</td>
+<td align="right">1.00</td>
+<td align="right">3.00</td>
+<td align="right">6.00</td>
+<td align="right">9.00</td>
+<td align="right">12.00</td>
+<td align="left">▇▅▅▅▇</td>
+</tr>
+<tr class="odd">
+<td align="left">journey_time_avg</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">165.39</td>
+<td align="right">78.94</td>
+<td align="right">45.96</td>
+<td align="right">100.77</td>
+<td align="right">160.84</td>
+<td align="right">205.70</td>
+<td align="right">481.00</td>
+<td align="left">▇▇▃▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">total_num_trips</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">281.07</td>
+<td align="right">155.09</td>
+<td align="right">6.00</td>
+<td align="right">181.00</td>
+<td align="right">238.00</td>
+<td align="right">390.00</td>
+<td align="right">878.00</td>
+<td align="left">▅▇▃▂▁</td>
+</tr>
+<tr class="odd">
+<td align="left">num_of_canceled_trains</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">7.74</td>
+<td align="right">23.65</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">4.00</td>
+<td align="right">279.00</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">num_late_at_departure</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">41.58</td>
+<td align="right">50.99</td>
+<td align="right">0.00</td>
+<td align="right">10.00</td>
+<td align="right">23.00</td>
+<td align="right">51.75</td>
+<td align="right">451.00</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">avg_delay_late_at_departure</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">16.81</td>
+<td align="right">8.80</td>
+<td align="right">0.00</td>
+<td align="right">11.98</td>
+<td align="right">15.84</td>
+<td align="right">20.28</td>
+<td align="right">173.57</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">avg_delay_all_departing</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">2.54</td>
+<td align="right">3.97</td>
+<td align="right">-4.47</td>
+<td align="right">0.90</td>
+<td align="right">1.78</td>
+<td align="right">3.24</td>
+<td align="right">173.57</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">num_arriving_late</td>
+<td align="right">9</td>
+<td align="right">1.00</td>
+<td align="right">38.03</td>
+<td align="right">30.33</td>
+<td align="right">0.00</td>
+<td align="right">17.00</td>
+<td align="right">30.00</td>
+<td align="right">50.00</td>
+<td align="right">235.00</td>
+<td align="left">▇▂▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">avg_delay_late_on_arrival</td>
+<td align="right">9</td>
+<td align="right">1.00</td>
+<td align="right">32.45</td>
+<td align="right">13.63</td>
+<td align="right">0.00</td>
+<td align="right">23.81</td>
+<td align="right">30.76</td>
+<td align="right">38.77</td>
+<td align="right">258.00</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">avg_delay_all_arriving</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">5.29</td>
+<td align="right">5.00</td>
+<td align="right">-143.97</td>
+<td align="right">2.71</td>
+<td align="right">4.58</td>
+<td align="right">7.25</td>
+<td align="right">36.82</td>
+<td align="left">▁▁▁▁▇</td>
+</tr>
+<tr class="even">
+<td align="left">delay_cause_external_cause</td>
+<td align="right">170</td>
+<td align="right">0.97</td>
+<td align="right">0.28</td>
+<td align="right">0.16</td>
+<td align="right">0.00</td>
+<td align="right">0.17</td>
+<td align="right">0.26</td>
+<td align="right">0.37</td>
+<td align="right">1.00</td>
+<td align="left">▆▇▂▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">delay_cause_rail_infrastructure</td>
+<td align="right">170</td>
+<td align="right">0.97</td>
+<td align="right">0.25</td>
+<td align="right">0.15</td>
+<td align="right">0.00</td>
+<td align="right">0.15</td>
+<td align="right">0.24</td>
+<td align="right">0.33</td>
+<td align="right">1.00</td>
+<td align="left">▇▇▂▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">delay_cause_traffic_management</td>
+<td align="right">170</td>
+<td align="right">0.97</td>
+<td align="right">0.18</td>
+<td align="right">0.14</td>
+<td align="right">0.00</td>
+<td align="right">0.08</td>
+<td align="right">0.16</td>
+<td align="right">0.26</td>
+<td align="right">1.00</td>
+<td align="left">▇▅▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">delay_cause_rolling_stock</td>
+<td align="right">170</td>
+<td align="right">0.97</td>
+<td align="right">0.18</td>
+<td align="right">0.13</td>
+<td align="right">0.00</td>
+<td align="right">0.09</td>
+<td align="right">0.16</td>
+<td align="right">0.24</td>
+<td align="right">1.00</td>
+<td align="left">▇▃▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">delay_cause_station_management</td>
+<td align="right">170</td>
+<td align="right">0.97</td>
+<td align="right">0.07</td>
+<td align="right">0.08</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.05</td>
+<td align="right">0.10</td>
+<td align="right">1.00</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">delay_cause_travelers</td>
+<td align="right">170</td>
+<td align="right">0.97</td>
+<td align="right">0.04</td>
+<td align="right">0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.02</td>
+<td align="right">0.06</td>
+<td align="right">0.67</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">num_greater_15_min_late</td>
+<td align="right">5</td>
+<td align="right">1.00</td>
+<td align="right">26.09</td>
+<td align="right">21.48</td>
+<td align="right">0.00</td>
+<td align="right">11.00</td>
+<td align="right">20.00</td>
+<td align="right">35.00</td>
+<td align="right">192.00</td>
+<td align="left">▇▂▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">avg_delay_late_greater_15_min</td>
+<td align="right">5</td>
+<td align="right">1.00</td>
+<td align="right">28.98</td>
+<td align="right">18.87</td>
+<td align="right">-118.02</td>
+<td align="right">8.99</td>
+<td align="right">31.53</td>
+<td align="right">41.00</td>
+<td align="right">258.00</td>
+<td align="left">▁▇▇▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">num_greater_30_min_late</td>
+<td align="right">5</td>
+<td align="right">1.00</td>
+<td align="right">11.65</td>
+<td align="right">10.41</td>
+<td align="right">0.00</td>
+<td align="right">4.00</td>
+<td align="right">9.00</td>
+<td align="right">16.00</td>
+<td align="right">91.00</td>
+<td align="left">▇▂▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">num_greater_60_min_late</td>
+<td align="right">5</td>
+<td align="right">1.00</td>
+<td align="right">4.20</td>
+<td align="right">4.68</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">3.00</td>
+<td align="right">6.00</td>
+<td align="right">36.00</td>
+<td align="left">▇▂▁▁▁</td>
+</tr>
+</tbody>
+</table>
+<p>Based on the summary table, we can create a date field (year + month), format station names from all upper to normal sentence, create a leg attribute (departure station + arrival station), and impute the appropriate missing values.</p>
+<pre class="r"><code># Add date, get rid of all caps for stations, create leg column, fill in missing service records
+service &lt;- full_trains %&gt;%
+  select(service, arrival_station, departure_station) %&gt;% 
+  group_by() %&gt;% 
+  distinct() %&gt;% 
+  filter(!is.na(service)) %&gt;% 
+  ungroup()
+
+trains &lt;- full_trains %&gt;%
+  mutate(across(starts_with(&quot;num_&quot;), ~replace_na(.x, 0))) %&gt;% 
+  select(-service) %&gt;% 
+  left_join(service) %&gt;%
+  mutate(
+    date = as.Date(sprintf(&quot;%d-%02d-01&quot;, year, month)),
+    departure_station = str_to_title(departure_station),
+    arrival_station = str_to_title(arrival_station),
+    leg = glue::glue(&quot;{departure_station} to {arrival_station}&quot;)) %&gt;%
+  mutate(service = if_else(
+    is.na(service),
+    case_when(str_detect(leg,&quot;Madrid&quot;) ~ &quot;International&quot;,
+              str_detect(leg, &quot;Barcelona&quot;) ~ &quot;International&quot;,
+              str_detect(leg, &quot;Francfort&quot;) ~ &quot;International&quot;,
+              str_detect(leg, &quot;Stuttgart&quot;) ~ &quot;International&quot;,
+              str_detect(leg, &quot;Zurich&quot;) ~ &quot;International&quot;,
+              str_detect(leg, &quot;Geneve&quot;) ~ &quot;Internationl&quot;,
+              T ~ &quot;National&quot;),
+    service)) %&gt;% 
+  select(service, leg, date, everything())</code></pre>
+<p>Total trips and late arrivals appear to have a linear relationship, which makes sense. There is an upward trend and significantly more variability from month to month than I would have expected. It appears there may have been a strike sometime in May or July of 2016 and it looks like there may be seasonality in the number of trips.</p>
+<pre class="r"><code>trips &lt;- trains %&gt;%
+  group_by(date) %&gt;%
+  summarise(trips = sum(total_num_trips)) %&gt;%
+  ungroup() %&gt;% 
+  ggplot(aes(x = date, y = trips)) +
+  geom_line() +
+  geom_smooth(method = loess, se = T) +
+  scale_x_date(breaks = &quot;9 months&quot;, date_labels = &quot;%b-%Y&quot;) +
+  scale_y_continuous(labels = scales::number_format(accuracy = .1, scale = 1/1000, suffix = &quot;K&quot;)) +
+  labs(y = &quot;Trips&quot;, x = &quot;Date&quot;, title = &quot;Scheduled Trips&quot;, subtitle = &quot;Overall service increased over the ~4 years&quot;) +
+  theme_blog()
+
+late_arrivals &lt;- trains %&gt;%
+  replace_na(list(num_arriving_late = 0)) %&gt;% 
+  group_by(date) %&gt;%
+  summarise(late = sum(num_arriving_late)) %&gt;%
+  ungroup() %&gt;% 
+  ggplot(aes(x = date, y = late)) +
+  geom_line() +
+  geom_smooth(method = loess, se = T) +
+  scale_x_date(breaks = &quot;9 months&quot;, date_labels = &quot;%b-%Y&quot;) +
+  scale_y_continuous(labels = scales::number_format(accuracy = .1, scale = 1/1000, suffix = &quot;K&quot;)) +
+  labs(y = NULL, x = &quot;Date&quot;, title = &quot;Late Arrivals&quot;, subtitle = &quot;Late arrivals increased with service&quot;) +
+  theme_blog() 
+
+# Put plots side by side with patchwork https://github.com/thomasp85/patchwork
+trips + late_arrivals</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/trips_by_date-1.png" width="864" /></p>
+<p>To get a better look of each leg we can plot the trips &amp; late arrival data on heatmaps. Since the number of trips is not evenly distributed across the legs, it’s helpful to scale the data. We can use a log scale for the number of trips, but we can use a percentage for late arrivals since that’s easier to understand. A few legs had the majority of all trips (bright yellow) and a few of the legs didn’t start operating until January of 2018 (white). A legs had months where 40+ percent of all trips arrived late (e.g. June / July of 2018).</p>
+<pre class="r"><code>service &lt;- trains %&gt;%
+  group_by(departure_station, year, date) %&gt;% 
+  summarise(trips = sum(total_num_trips, na.rm = F), .groups = &quot;drop&quot;) %&gt;% 
+  arrange(departure_station) %&gt;%
+  mutate(month = lubridate::month(date, label = T, abbr = T),
+         row = row_number()) %&gt;% 
+  ggplot(aes(x = month, y = reorder(departure_station, -row), fill = trips)) +
+  geom_tile() +
+  scale_fill_viridis(labels = c(&quot;&quot;,&quot;Lowest&quot;,&quot;&quot;,&quot;&quot;,&quot;&quot;,&quot;&quot;,&quot;Highest&quot;,&quot;&quot;), n.breaks = 7, trans = c(&quot;log&quot;)) +
+  scale_x_discrete(breaks = c(&quot;Jan&quot;,&quot;Apr&quot;,&quot;Jul&quot;,&quot;Oct&quot;)) +
+  facet_wrap(~year, nrow = 1, scales = &quot;free_x&quot;) +
+  labs(y = &quot;Departure Station&quot;, 
+       x = NULL,
+       fill = &quot;Trips&quot;,
+       title = &quot;Trips by Month&quot;) +
+  theme_blog_facet(axis.text.x = element_text(size = 9, angle = 90, hjust = .5),
+                   axis.text.y = element_text(size = 9),
+                   panel.grid = element_blank(),
+                   axis.ticks = element_blank(),
+                   legend.text = element_text(size = 10),
+                   legend.position=&quot;bottom&quot;,
+                   legend.justification=&quot;center&quot;,
+                   legend.direction=&quot;horizontal&quot;,
+                   legend.key.width= unit(1, &#39;cm&#39;))
+
+late &lt;- trains %&gt;% 
+  group_by(departure_station, year, date) %&gt;% 
+  summarise(late_arrivals = sum(num_arriving_late, na.rm = F),
+            trips = sum(total_num_trips, na.rm = F)) %&gt;% 
+  ungroup() %&gt;% 
+  mutate(pct_late_arrivals = late_arrivals / trips, 
+         month = lubridate::month(date, label = T, abbr = T),
+         row = row_number()) %&gt;% 
+  ggplot(aes(x = month, y = reorder(departure_station, -row), fill = pct_late_arrivals)) +
+  geom_tile() +
+  scale_x_discrete(breaks = c(&quot;Jan&quot;,&quot;Apr&quot;,&quot;Jul&quot;,&quot;Oct&quot;)) +
+  scale_fill_viridis(option = &quot;magma&quot;, labels = scales::percent_format()) +
+  facet_wrap(~year, nrow = 1, scales = &quot;free_x&quot;) +
+  labs(y = NULL, 
+       x = NULL, 
+       fill = NULL,
+       title = &quot;Late Arrivals by Month&quot;) +
+  theme_blog_facet(axis.text.x = element_text(size = 9, angle = 90, hjust = .5),
+                   axis.text.y = element_blank(),
+                   panel.grid = element_blank(),
+                   legend.text = element_text(size = 10),
+                   legend.position=&quot;bottom&quot;,
+                   legend.justification=&quot;center&quot;,
+                   legend.direction=&quot;horizontal&quot;,
+                   legend.key.width= unit(1, &#39;cm&#39;))
+
+service + late</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/heatmaps-1.png" width="864" /></p>
+<div id="networking" class="section level3">
+<h3>Networking</h3>
+<p>No fear, I’m not talking about a cringy coffee date with a complete stranger, I’m talking about math networks (i.e. graphs). Viewing our data in a network will provide a lot of context we can’t get from other plotting methods. The <a href="https://tidygraph.data-imaginist.com/">tidygraph</a> package makes it fairly easy to work with network graphs and the <a href="https://ggraph.data-imaginist.com/">ggraph</a> package provides ggplot2 with graphing grammar of graphics (wow that sounds confusing :joy:). These packages (and network analysis in general) are incredibly robust so there is a bit of a learning curve, I’ve noted some other materials I’ve found helpful getting started. <a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a></p>
+<center>
+<img src="https://media.giphy.com/media/RLPaiMQnclf7HNnrtE/giphy.gif" width="450" />
+</center>
+<p>The short of it, tidygraph allows us to perform network analysis in data frames so we still take advantage of our the tidy workflow even though <a href="https://en.wikipedia.org/wiki/Graph_theory">graph objects</a> aren’t rectangular in nature. To create a graph object, we have to create a nodes list (points in the network) and an edges list (connections between nodes). We can store our nodes list as a data frame with a record for each node in the network, in this case train stations, and any attributes related to the nodes. We can store our edges list as a data frame with a record for each connection in the network, in this case legs, and any attributes related to the edges. All graph objects are either directed or un-directed - this graph is un-directed because the trains go in both directions so the edges do not represent a direction. Once we have a node list and edge list, we can transform the data frames into a <code>tbl_graph</code>.</p>
+<pre class="r"><code>routes_df &lt;- trains |&gt; 
+  mutate(total_journies_time = total_num_trips * journey_time_avg) |&gt; 
+  group_by(departure_station, arrival_station, leg, service) |&gt; 
+  summarise(
+    journey_time_weighted_avg = sum(total_journies_time, na.rm = T) / sum(total_num_trips, na.rm = T),
+    trips = sum(total_num_trips, na.rm = T),
+    late_departures = sum(num_late_at_departure, na.rm = T),
+    late_arrivals = sum(num_arriving_late, na.rm = T),
+    late_trips = sum(num_late_at_departure, na.rm = T) + sum(num_arriving_late, na.rm = T)
+  ) |&gt;
+  rename(&quot;from&quot; = &quot;departure_station&quot;, &quot;to&quot; = &quot;arrival_station&quot;)  |&gt;
+  ungroup() 
+departures_df &lt;- trains |&gt;
+  group_by(departure_station) |&gt;
+  summarise(
+    departures = sum(total_num_trips, na.rm = T),
+    late_departures = sum(num_late_at_departure, na.rm = T),
+    pct_late_departures = sum(num_late_at_departure, na.rm = T) / sum(total_num_trips, na.rm = T),
+    .groups = &quot;drop&quot;) |&gt;
+  rename(&quot;station&quot;=&quot;departure_station&quot;) |&gt; 
+  mutate(id = row_number(), .before = 1)
+arrivals_df &lt;- trains |&gt;
+  group_by(arrival_station) |&gt;
+  summarise(
+    arrivals = sum(total_num_trips, na.rm = T),
+    late_arrivals = sum(num_arriving_late, na.rm = T),
+    pct_late_arrivals = sum(num_arriving_late, na.rm = T) / sum(total_num_trips, na.rm = T),
+    .groups = &quot;drop&quot;) |&gt;
+  rename(&quot;station&quot;=&quot;arrival_station&quot;) 
+stations_df &lt;- inner_join(departures_df, arrivals_df, by = c(&quot;station&quot; = &quot;station&quot;))
+
+routes_df &lt;- routes_df |&gt; 
+  left_join(stations_df |&gt; select(id, station), by = c(&quot;from&quot; = &quot;station&quot;)) |&gt; 
+  mutate(from = id) |&gt; 
+  select(-id) |&gt; 
+  left_join(stations_df |&gt; select(id, station), by = c(&quot;to&quot; = &quot;station&quot;)) |&gt; 
+  mutate(to = id) |&gt; 
+  select(-id)
+network_df &lt;- tbl_graph(nodes = stations_df, edges = routes_df, directed = F)</code></pre>
+<center>
+<img src="https://media.giphy.com/media/7c0bE2bfJrfos/giphy.gif" width="450" />
+</center>
+<p>With the <code>tbl_graph</code>, we can take advantage of ggraph to visualize our data. There is an <code>autograph()</code> function to quickly visualize your network automagically, but I’ll spell it out as well with <code>ggraph()</code>. Layout determines the position of the nodes and edges (more on that in a minute), we can start with <code>layout='auto'</code>. Then we use the typical ggplot flow but there are new geoms to pay attention to, primarily <code>geom_node_point()</code> and <code>geom_edge_link()</code>, these are very basic geoms to visualize the nodes and edges of the graph. Visualizing the data as a network has immediate benefits, this visual shows there are several major hubs that most legs connect through which wasn’t clearly discernible from our other plots.</p>
+<pre class="r"><code>autograph(network_df) </code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="864" /></p>
+<pre class="r"><code>auto &lt;- autograph(network_df) + labs(x = NULL, y = NULL, title = &quot;Autograph&quot;) + theme_blog_network()
+verbose &lt;- network_df %N&gt;%
+  ggraph(layout = &#39;auto&#39;) + 
+  geom_edge_link(width = .15) + 
+  geom_node_point(aes(size = arrivals + departures), show.legend = F)  +
+  scale_size(rang = c(1, 15)) +
+  labs(title = &quot;Verbose&quot;, x = &quot;&quot;, y = &quot;&quot;, size = NULL) +
+  theme_blog_network()
+auto + verbose</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-2.png" width="864" /></p>
+<p>Regarding layout, ggraph provides a number of layouts from igraph <a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a> and graphlayouts <a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a>, with option to create your own. The ggraph function defaults to <code>layout='auto'</code>, which seems to do a pretty good job selecting a layout in my novice experience, but it’s recommended that a layout is intentionally chosen for the graph. All the layout choices can be overwhelming, but it’s pretty easy to visually narrow down choices and then do a bit of research to understand the differences between those options. <a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a> Many of the algorithms are non-deterministic meaning you’ll get different results when re-running, which makes selecting the best layout all the more challenging. I saw a cool <a href="https://www.data-imaginist.com/2017/ggraph-introduction-layouts/">example</a> by Thomas Lin Pederson where he showed the different layouts in a neat animation using <a href="https://github.com/thomasp85/tweenr">tweenr</a>. I tried that here, more for fun, to see the different layouts and mess with tweenr. I decided to go with <code>layout='stress'</code> because it seemed to produce the least overlap for both nodes and edges making it the easiest to read - funnily enough the same layout <code>layout='auto'</code> chose :joy:</p>
+<pre class="r"><code>layout_names &lt;- c(&#39;star&#39;, &#39;circle&#39;, &#39;gem&#39;, &#39;dh&#39;, &#39;graphopt&#39;, &#39;grid&#39;, &#39;mds&#39;, &#39;randomly&#39;, &#39;fr&#39;, &#39;kk&#39;, &#39;drl&#39;, &#39;lgl&#39;, &#39;stress&#39;)
+layouts &lt;- map(layout_names, function(x){
+  layout &lt;- create_layout(x, graph = network_df) |&gt; select(x, y, circular) |&gt; mutate(layout_name = !!x)
+})
+n &lt;- 5
+n_frames &lt;- length(layout_names) * n
+layouts_tween &lt;- tween_states(layouts, tweenlength = 1, 
+                              statelength = 1, ease = &#39;cubic-in-out&#39;, 
+                              nframes = n_frames)
+title_transp &lt;- tween_t(c(0, 1, 0), n, &#39;cubic-in-out&#39;)[[1]]
+plots &lt;- map(unique(layouts_tween$.frame), function(i){
+  tmp_layout &lt;- layouts_tween[layouts_tween$.frame == i, ]
+  layout_name &lt;- tmp_layout$layout_name[1]
+  title_alpha &lt;- title_transp[i %% n + 1]
+  p &lt;- ggraph(network_df, layout = tmp_layout) +
+    geom_edge_link(width = .15) +
+    geom_node_point(aes(size = arrivals + departures), show.legend = F)  +
+    scale_size(rang = c(1, 15)) +
+    labs(title = paste0(&#39;Layout: &#39;, layout_name), x = NULL, y = NULL) +
+    theme_blog_network() +
+    theme(plot.title = element_text(colour = alpha(&#39;black&#39;, title_alpha)))
+  return(p)
+})
+walk(plots, print)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/network_layouts_gif.gif" width="864" /></p>
+We can use many (not all) tidyverse functions with a <code>tbl_graph</code> by activating the nodes or edges and using the verb of choice (e.g. <code>mutate()</code>, <code>filter()</code>, <code>morph()</code> etc.). The <code>activate()</code> function can be called directly or as pipeline operators <code>%N&gt;%</code> and <code>%E&gt;%</code>, which active nodes and edge respectively. I ran into some challenges in this post that I won’t spell out for brevity, but know functions like <code>pivot_longer()</code> and <code>unnest()</code> aren’t available with <code>tbl_graph</code> objects. I ended up writing a lot of clumsy code with <code>pull()</code>. There may be better approaches, but I wasn’t finding much on Stackoverflow or Github. I’ll post some questions later and link them in here if I can get some answers.<br />
+
+<center>
+<img src="https://media.giphy.com/media/M3eK8qCLFeZ5m/giphy.gif" width="450" />
+</center>
+<p>With dplyr verbs, we can calculate attributes on our nodes &amp; edges to add to our visuals.</p>
+<pre class="r"><code>l &lt;- network_df %N&gt;%
+  mutate(outlier = if_else(scale((late_arrivals + late_departures) / (arrivals + departures)) &lt;= -1.5 | scale((late_arrivals + late_departures) / (arrivals + departures)) &gt;= 1.5, T, F)) |&gt; 
+  mutate(node_label = if_else(outlier, glue::glue(&quot;{station}:\n{scales::label_percent(accuracy = .1)((late_arrivals + late_departures) / (arrivals + departures))}&quot;), NA_character_)) |&gt; 
+  ggraph(layout = &#39;stress&#39;) + 
+  geom_edge_link(width = .15) + 
+  geom_node_point(aes(size = arrivals + departures, color = (late_arrivals + late_departures) / (arrivals + departures)))  +
+  geom_node_label(aes(label = node_label), alpha = .75, repel = T) +
+  scale_size(rang = c(1, 15), guide = NULL) +
+  scale_color_distiller(labels = scales::label_percent(), palette = &quot;Reds&quot;, direction = 1) +
+  labs(title = &quot;Stations w/ outlier lateness&quot;, subtitle = &quot;Labeled stations had total late arrivals &amp; departures 2 standard deviations outside the mean&quot;, x = &quot;&quot;, y = &quot;&quot;, color = &quot;Arrived / Departed Late&quot;, size = NULL) +
+  theme_blog_network(legend.position = &quot;bottom&quot;)
+
+duration_outliers &lt;- network_df %E&gt;%
+  mutate(journey_time_z = scale(journey_time_weighted_avg)) |&gt; 
+  mutate(outlier = if_else(scale(journey_time_weighted_avg) &lt;= -2 | scale(journey_time_weighted_avg) &gt;= 2, T, F)) |&gt; 
+  filter(outlier == T)
+duration_outliers &lt;- unique(c(duration_outliers |&gt; pull(from), duration_outliers |&gt; pull(to)))
+d &lt;- network_df %E&gt;%
+  mutate(outlier = if_else(scale(journey_time_weighted_avg) &lt;= -2 | scale(journey_time_weighted_avg) &gt;= 2, T, F)) %N&gt;%
+  mutate(node_label = if_else(id %in% duration_outliers, station, NA_character_)) |&gt; 
+  ggraph(layout = &#39;stress&#39;) + 
+  geom_edge_link(aes(edge_width = journey_time_weighted_avg, color = outlier), alpha = .5) + 
+  scale_edge_width(range = c(.15, 3)) +
+  scale_edge_color_manual(values = c(&quot;TRUE&quot; = &quot;red&quot;, &quot;FALSE&quot; = &quot;black&quot;), guide = NULL) +
+  geom_node_point(aes(size = arrivals + departures))  +
+  geom_node_label(aes(label = node_label), alpha = .7, repel = T) +
+  scale_size(rang = c(1, 15), guide = NULL) +
+  labs(title = &quot;Stations w/ routes w/ outlier duration&quot;, subtitle = &quot;Labeled stations had destinations with weighted average journey time 2 standard deviations outside the mean&quot;, x = &quot;&quot;, y = &quot;&quot;, edge_width = &quot;Journey Time (mins)&quot;) +
+  theme_blog_network(legend.position = &quot;bottom&quot;)
+l / d</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="864" /></p>
+<p>Aside from the nice workflow, tidygraph also gives us access to a lot of new functionality and functionality from other network packages (other packages that are tougher to use with data frames imho) including <code>centrality_*</code> functions. There are a number of ways to measure centrality including betweenness, closeness, eigen, etc. Our network has pretty big hubs (i.e. Paris &amp; Lyon Part Dieu) so the central nodes are pretty obvious, but often determining the central nodes is more difficult. Below we used betweenness to measure centrality, which measures the centrality of a node by how many times it is used to create the shortest path to other nodes in the network.</p>
+<pre class="r"><code>cb &lt;- network_df %N&gt;%
+  mutate(cb = centrality_betweenness())
+mean_cb &lt;- mean(cb |&gt; pull(cb))
+sd_cb &lt;- sd(cb |&gt; pull(cb))
+cb %N&gt;%  
+  mutate(node_label = if_else(cb &gt;= mean_cb + sd_cb*2 , station, NA_character_)) |&gt; 
+  ggraph(layout = &#39;stress&#39;) +
+  geom_edge_link(width = .15) +
+  geom_node_point(aes(size = arrivals + departures, color = cb)) +
+  geom_node_label(aes(label = node_label), alpha = .75, repel = T) +
+  scale_size(range = c(1, 15), guide = NULL) +
+  scale_colour_steps(labels = NULL, low = &quot;#d9d9d9&quot;, high = &quot;#000000&quot;) + 
+  labs(title = &quot;Centrality Betweenness&quot;, x = &quot;&quot;, y = &quot;&quot;, color = &quot;Centrality&quot;, size = NULL) +
+  theme_blog_network(legend.position = &quot;bottom&quot;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-1.png" width="864" /></p>
+<p>I read a <a href="http://blog.schochastics.net/post/network-centrality-in-r-introduction/">post</a> by David Schoch that inspired me to compare different centrality measures. It seems like a good exploratory way to understand the network and to understand the best centrality measure(s) to use. The eigen measure was particularly interesting for this network, it looks for nodes that benefit from the connections of their nearest neighbors.</p>
+<pre class="r"><code>centrality_df &lt;- network_df %N&gt;% 
+  mutate(
+    cd = tidygraph::centrality_degree(),
+    cb = centrality_betweenness(),
+    cc = centrality_closeness(),
+    ce = centrality_eigen(),
+    cs = centrality_subgraph()
+  ) 
+centrality_df &lt;- tibble(
+  id = centrality_df  |&gt; pull(id),
+  station = centrality_df  |&gt; pull(station),
+  degree = centrality_df  |&gt; pull(cd),
+  betweenness = centrality_df  |&gt; pull(cb),
+  closeness = centrality_df  |&gt; pull(cc),
+  eigen = centrality_df  |&gt; pull(ce),
+  subgraph = centrality_df  |&gt; pull(cs)
+) 
+is_top_n &lt;- function(x, n){
+  top_n &lt;- tail(sort(x), n)
+  x &gt;= min(top_n)
+}
+centrality_df |&gt; 
+  mutate(across(.cols = c(degree, betweenness, closeness, eigen, subgraph), .fns = is_top_n, n = 3, .names = &quot;{.col}_top_5&quot;)) |&gt; 
+  mutate(across(.cols = c(degree, betweenness, closeness, eigen, subgraph), .fns = ~abs(log10(.x)))) |&gt; 
+  filter(if_any(.cols = contains(&quot;_top_&quot;), ~ . == T  )) |&gt; 
+  select(-contains(&quot;_top_&quot;)) |&gt; 
+  pivot_longer(cols = c(degree, betweenness, closeness, eigen, subgraph), names_to = &quot;measure&quot;, values_to = &quot;value&quot;) |&gt;
+  mutate(x_order = case_when(
+    measure == &quot;betweenness&quot; ~ 1,
+    measure == &quot;closeness&quot; ~ 2,
+    measure == &quot;degree&quot; ~ 3,
+    measure == &quot;eigen&quot; ~ 4,
+    measure == &quot;subgraph&quot; ~ 5
+  )) |&gt; 
+  ggplot() +
+  geom_col(aes(x = reorder(measure, -x_order), y = value, fill = station), position = &quot;dodge&quot;) +
+  scale_fill_viridis_d() +
+  labs(title = &quot;Centrality Measures&quot;, subtitle = &quot;Comparing centrality measures for the stations in the top 5 (including ties)&quot;, fill = &quot;Station&quot;, y = NULL, x = &quot;Measure&quot;) +
+  theme_blog() +
+  theme(axis.text.y = element_blank())</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-6-1.png" width="864" /></p>
+<p>We can also use the <code>group_*</code> functions to perform community detection, for example <code>group_edge_betweenness()</code>.</p>
+<pre class="r"><code>group_edge_betweenness_map_n_dfc &lt;- function(tbl_graph, i){
+  # This feels very untidy, but names() does not work on tbl_graph objects and I can&#39;t find any way to use certain tidy
+  # methods (e.g. pivot_longer, map_dfc, etc.)
+  # pull() is the only programmatic way I can figure out to extract things from my df&#39;s once they&#39;re in the tbl_graph
+  cb_grps_df &lt;- tbl_graph %N&gt;%
+    mutate(grp_cols = list(paste0(&#39;grps_&#39;, as.character(i))))
+  for(n in i){
+    cb_grps_df &lt;- cb_grps_df %N&gt;%
+      mutate(&quot;{paste0(&#39;grps_&#39;, as.character(n))}&quot; := forcats::as_factor(group_edge_betweenness(n_groups = n)))
+  }
+  return(cb_grps_df)
+}
+group_edge_betweenness_map_n_plots &lt;- function(tbl_graph){
+  grp_cols &lt;- unique(tbl_graph  %N&gt;% pull(grp_cols)) |&gt; 
+    unlist()
+  plots &lt;- map(grp_cols, function(col){
+    tbl_graph |&gt;
+      ggraph(layout = &quot;stress&quot;) +
+      geom_edge_link0(width = 0.15) +
+      geom_node_point(aes(size = arrivals + departures, fill = eval_tidy(data_sym(col))), show.legend = F) +
+      geom_mark_hull(
+        aes(x, y, group = eval_tidy(data_sym(col)), fill =  eval_tidy(data_sym(col)), label = eval_tidy(data_sym(col))),
+        concavity = 4,
+        expand = unit(2, &quot;mm&quot;),
+        alpha = 0.25
+      ) +
+      scale_fill_brewer(palette = &quot;Set1&quot;) +
+      labs(title = paste0(&quot;Groups: &quot;, stringr::str_remove(col, &quot;grps_&quot;)), x = NULL, y = NULL, fill = &quot;Group&quot;) +
+      theme_blog_network()
+  })
+  return(plots)
+}
+plots &lt;- network_df |&gt; 
+  group_edge_betweenness_map_n_dfc(i = 2:8) |&gt; 
+  group_edge_betweenness_map_n_plots()
+walk(plots, print)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/network_clusters_gif.gif" width="864" /></p>
+</div>
+<div id="geospatial" class="section level3">
+<h3>Geospatial</h3>
+After plotting our network and seeing Stuttgart on the left and Barcelona on the right, I really wanted to source coordinates and map the train network. The dataset didn’t come with coordinates, but I thought maybe I could source them - this was a total can of worms called Wikidata.<br />
+
+<center>
+<img src="https://media.giphy.com/media/UVdiMrmmwTWDcN2dZ5/giphy.gif" width="450" />
+</center>
+<div id="wikidata" class="section level4">
+<h4>Wikidata</h4>
+<p>In trying to source coordinates for the 59 train stations I stumbled across <a href="https://github.com/keithmcnulty/wikifacts">wikifacts</a>, an R package to query <a href="https://www.wikidata.org/wiki/Wikidata:Main_Page">Wikidata</a>. Wikidata is a structured data source for Wikipedia, Wikivoyage, Wiktionary, Wikisource, and the many other wiki projects. In other words, it’s a data base you can query to get info from Wikipedia. Who knew! I’m going to cover the basics of wikifacts in a separate post for posterity, but I used it to get coordinates for the stations so we could map the data.</p>
+<p>It wasn’t quite as simple as a query and a join with the data because the names of the stations weren’t quite right in this data set (e.g. station Italie is not a station name). I had to do a little bit of Googling and make a few assumptions, but I think I got the wikidata item ID’s for all the stations. It’s a bit of a round about way to get the data, but it works.</p>
+<pre class="r"><code>wikidata_ids &lt;- tibble::tribble(
+  ~station, ~wikidata, 
+  &quot;Aix En Provence Tgv&quot;, &quot;Q800366&quot;, 
+  &quot;Angers Saint Laud&quot;, &quot;Q952091&quot;, 
+  &quot;Angouleme&quot;, &quot;Q3095646&quot;, 
+  &quot;Annecy&quot;, &quot;Q2043382&quot;, 
+  &quot;Arras&quot;, &quot;Q1990647&quot;, 
+  &quot;Avignon Tgv&quot;, &quot;Q174845&quot;,
+  &quot;Barcelona&quot;, &quot;Q800453&quot;,
+  &quot;Bellegarde (Ain)&quot;, &quot;Q3095950&quot;, 
+  &quot;Besancon Franche Comte Tgv&quot;, &quot;Q599069&quot;, 
+  &quot;Bordeaux St Jean&quot;, &quot;Q800564&quot;, 
+  &quot;Brest&quot;, &quot;Q2255490&quot;, 
+  &quot;Chambery Challes Les Eaux&quot;, &quot;Q3096183&quot;, 
+  &quot;Dijon Ville&quot;, &quot;Q3096374&quot;, 
+  &quot;Douai&quot;, &quot;Q2228617&quot;, 
+  &quot;Dunkerque&quot;, &quot;Q2474563&quot;,
+  &quot;Francfort&quot;, &quot;Q165368&quot;,
+  &quot;Geneve&quot;, &quot;Q800819&quot;,
+  &quot;Grenoble&quot;, &quot;Q2545346&quot;,
+  &quot;Italie&quot;, &quot;Q801193&quot;,
+  &quot;La Rochelle Ville&quot;, &quot;Q2762145&quot;,
+  &quot;Lausanne&quot;, &quot;Q669678&quot;,
+  &quot;Laval&quot;, &quot;Q3096443&quot;,
+  &quot;Le Creusot Montceau Montchanin&quot;, &quot;Q801071&quot;,
+  &quot;Le Mans&quot;, &quot;Q2718010&quot;,
+  &quot;Lille&quot;, &quot;Q801099&quot;,
+  &quot;Lyon Part Dieu&quot;, &quot;Q2008&quot;,
+  &quot;Macon Loche&quot;, &quot;Q2253062&quot;,
+  &quot;Madrid&quot;, &quot;Q23081&quot;,
+  &quot;Marne La Vallee&quot;, &quot;Q801167&quot;,
+  &quot;Marseille St Charles&quot;, &quot;Q371217&quot;,
+  &quot;Metz&quot;, &quot;Q801179&quot;,
+  &quot;Montpellier&quot;, &quot;Q801197&quot;,
+  &quot;Mulhouse Ville&quot;, &quot;Q801205&quot;,
+  &quot;Nancy&quot;, &quot;Q2178663&quot;,
+  &quot;Nantes&quot;, &quot;Q2180175&quot;,
+  &quot;Nice Ville&quot;, &quot;Q738970&quot;,
+  &quot;Nimes&quot;, &quot;Q2360563&quot;,
+  &quot;Paris Est&quot;, &quot;Q757180&quot;,
+  &quot;Paris Lyon&quot;, &quot;Q747541&quot;,
+  &quot;Paris Montparnasse&quot;, &quot;Q631114&quot;,
+  &quot;Paris Nord&quot;, &quot;Q745942&quot;,
+  &quot;Paris Vaugirard&quot;, &quot;Q631114&quot;,
+  &quot;Perpignan&quot;, &quot;Q2283118&quot;,
+  &quot;Poitiers&quot;, &quot;Q2786522&quot;,
+  &quot;Quimper&quot;, &quot;Q2191696&quot;,
+  &quot;Reims&quot;, &quot;Q801356&quot;,
+  &quot;Rennes&quot;, &quot;Q1866058&quot;,
+  &quot;Saint Etienne Chateaucreux&quot;, &quot;Q2486002&quot;,
+  &quot;St Malo&quot;, &quot;Q2623224&quot;,
+  &quot;St Pierre Des Corps&quot;, &quot;Q3097610&quot;,
+  &quot;Strasbourg&quot;, &quot;Q801473&quot;,
+  &quot;Stuttgart&quot;, &quot;Q613766&quot;,
+  &quot;Toulon&quot;, &quot;Q2683553&quot;,
+  &quot;Toulouse Matabiau&quot;, &quot;Q373449&quot;,
+  &quot;Tourcoing&quot;, &quot;Q2598042&quot;,
+  &quot;Tours&quot;, &quot;Q1876295&quot;,
+  &quot;Valence Alixan Tgv&quot;, &quot;Q2052261&quot;,
+  &quot;Vannes&quot;, &quot;Q1867341&quot;,
+  &quot;Zurich&quot;, &quot;Q224494&quot;
+)
+all_tgv_stations_wikidata &lt;- &#39;
+  SELECT ?name ?nameLabel ?nameDescription ?coords
+  WHERE
+  {
+    {?name wdt:P1192 wd:Q129337}
+    UNION
+    {?name wdt:P1192 wd:Q675756}
+    UNION
+    {?name wdt:P1192 wd:Q847141}
+    UNION
+    {?name wdt:P127 wd:Q358752}
+    OPTIONAL {?name wdt:P625 ?coords.}
+    SERVICE wikibase:label { bd:serviceParam wikibase:language &quot;en&quot;. }
+  }
+  &#39; |&gt; 
+  wiki_query() |&gt; 
+  mutate(wikidata = str_split(name, &quot;entity/&quot;)) |&gt; 
+  mutate(wikidata = map_chr(wikidata, 2)) |&gt; 
+  distinct()</code></pre>
+</div>
+<div id="sf" class="section level4">
+<h4>sf</h4>
+<p>Not the city, the R package <a href="https://r-spatial.github.io/sf/">sf</a>. It stands for simple features, a set of standards that specify a common storage and access model of geographic feature made of mostly two-dimensional geometries. [^5] The sf package is the tidygraph of geospatial analytics in R (or vice versa, I think sf might be older).</p>
+<center>
+<img src="https://media.giphy.com/media/26DNdV3b6dqn1jzR6/giphy.gif" width="450" />
+</center>
+<p>We can work with many geometries <code>sf</code>. Most of my experience has been with points and polygons, but given all the time we just spent working tidygraph, we should convert the edges to linestrings. This was my first time working with linestrings and I had a little trouble, but <a href="https://stackoverflow.com/questions/70235896/sf-and-networks-in-r-create-an-edgelist-from-distinct-linestrings-and-points-s">this great answer</a> from lovalery got me through it.</p>
+<pre class="r"><code>extract_lonlat &lt;- function(point, lon_or_lat = c(&quot;lon&quot;, &quot;lat)&quot;)){
+  args &lt;- c(&quot;lon&quot;, &quot;lat&quot;)
+  lon_or_lat &lt;- match.arg(lon_or_lat, choices = args)
+  index &lt;- which(args == lon_or_lat, arr.ind = F)
+  x &lt;- str_split_fixed(str_remove(str_remove(point, pattern = &quot;Point\\(&quot;), pattern = &quot;\\)&quot;), n = 2, &quot; &quot;)[index]
+  return(x)
+}
+stations_sf &lt;- stations_df |&gt;  
+  left_join(wikidata_ids, by = c(&quot;station&quot; = &quot;station&quot;)) |&gt; 
+  left_join(all_tgv_stations_wikidata, by = c(&quot;wikidata&quot; = &quot;wikidata&quot;)) |&gt;
+  rowwise() |&gt; 
+  mutate(
+    lon = as.numeric(extract_lonlat(coords, &quot;lon&quot;)),
+    lat = as.numeric(extract_lonlat(coords, &quot;lat&quot;))
+  ) |&gt; 
+  ungroup() |&gt; 
+  st_as_sf(wkt = &quot;coords&quot;, remove = T) |&gt;
+  st_set_crs(4326)
+
+routes_sf &lt;- map2_dfr(routes_df$from, routes_df$to, function(from, to) {
+  from_stations_sf &lt;- stations_sf |&gt; filter(id == from)
+  to_stations_sf &lt;- stations_sf |&gt; filter(id == to)
+  from_coords &lt;- stations_sf |&gt; filter(id == from) |&gt; select(coords)
+  to_coords &lt;- stations_sf |&gt; filter(id == to) |&gt; select(coords)
+  geometry &lt;- st_cast(st_union(from_coords,to_coords), &quot;LINESTRING&quot;)
+  df &lt;- tibble(
+    from = from,
+    to = to,
+    from_lon = from_stations_sf$lon,
+    from_lat = from_stations_sf$lat,
+    to_lon = to_stations_sf$lon,
+    to_lat = to_stations_sf$lat,
+    geometry = geometry$coords
+  )
+  return(df)
+}) |&gt; 
+  st_as_sf() |&gt; 
+  st_set_crs(4326)</code></pre>
+<p>Creating a map with sf and <a href="https://rstudio.github.io/leaflet/">leaflet</a> is so easy, it’s amazing! We can pass the points and the linestrings or just the points since the routes get really crowded unless we filter to one station maybe… This could be a good idea to build an accompanying table to filter the leaflet nodes to specific stations and all their connections. I’m going to skip that idea for now because I’ve done that before in with plotly and crosstalk in my <a href="https://www.mark-druffel.com/2020/great-american-beer-festival/">Great American Beer Festival post</a>, but I might do it in a separate post later. Note, I had a small hiccup getting the map background to load on my computer that was solved with <a href="https://stackoverflow.com/questions/37812844/package-leaflet-map-doesnt-show">this answer</a> from Wilcar.</p>
+<pre class="r"><code>leaflet() |&gt; 
+  addTiles(attribution = &#39;&amp;copy; &lt;a href=&quot;http://www.openstreetmap.org/copyright&quot;&gt;OpenStreetMap&lt;/a&gt;&#39;) |&gt; 
+  addMarkers(data = stations_sf) |&gt;  
+  addPolylines(data = routes_sf)</code></pre>
+<div id="htmlwidget-1" style="width:864px;height:480px;" class="leaflet html-widget"></div>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addTiles","args":["https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",null,null,{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"attribution":"&copy; <a href=\"http://www.openstreetmap.org/copyright\">OpenStreetMap<\/a>"}]},{"method":"addMarkers","args":[[43.455,47.464722,45.654167,45.902222,50.2869,43.921666666,41.378888888,46.109425,47.308889,44.825813888,48.387777777,45.571496,47.32337,50.371769,51.03038,50.106944444,46.210217,45.1908,45.485658,46.152777777,46.516784833,48.076388888,46.765277777,47.994166666,50.639444444,45.760555555,46.28291,40.472222222,48.869722222,43.303055555,49.1098,43.604636111,47.7426,48.689722,47.216666666,43.704444444,43.8325,48.876944444,48.844722222,48.839333333,48.882777777,48.839333333,42.696261111,46.582222222,47.994722,49.259166666,48.103333333,45.443333333,48.646584,47.386111111,48.585144,48.783888888,43.128611111,43.611111111,50.716573,47.389722222,44.991666666,47.665278,47.378169444],[5.317222222,-0.556944,0.165278,6.121667,2.781391,4.785833333,2.14,5.823483,5.957778,-0.555730555,-4.480458333,5.919372,5.027208,3.090532,2.36876,8.6625,6.142447,5.7147,9.203988,-1.145555555,6.629095833,-0.760833333,4.499722222,0.191944444,3.075277777,4.859444444,4.77882,-3.682222222,2.782777777,5.381111111,6.1775,3.881038888,7.3433,6.173611,-1.541666666,7.261944444,4.366389,2.359166666,2.373611111,2.318288888,2.356666666,2.318288888,2.879733333,0.333055555,-4.092222,4.024166666,-1.6725,4.399444444,-2.003995,0.723611111,7.734263,9.181666666,5.929722222,1.453611111,3.168114,0.693611111,4.978611111,-2.7525,8.540177777],null,null,null,{"interactive":true,"draggable":false,"keyboard":true,"title":"","alt":"","zIndexOffset":0,"opacity":1,"riseOnHover":false,"riseOffset":250},null,null,null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addPolylines","args":[[[[{"lng":[5.317222222,2.373611111],"lat":[43.455,48.844722222]}]],[[{"lng":[2.318288888,-0.556944],"lat":[48.839333333,47.464722]}]],[[{"lng":[2.318288888,0.165278],"lat":[48.839333333,45.654167]}]],[[{"lng":[6.121667,2.373611111],"lat":[45.902222,48.844722222]}]],[[{"lng":[2.781391,2.356666666],"lat":[50.2869,48.882777777]}]],[[{"lng":[4.785833333,2.373611111],"lat":[43.921666666,48.844722222]}]],[[{"lng":[2.14,2.373611111],"lat":[41.378888888,48.844722222]}]],[[{"lng":[5.823483,2.373611111],"lat":[46.109425,48.844722222]}]],[[{"lng":[5.957778,2.373611111],"lat":[47.308889,48.844722222]}]],[[{"lng":[-0.555730555,2.318288888],"lat":[44.825813888,48.839333333]}]],[[{"lng":[-0.555730555,2.318288888],"lat":[44.825813888,48.839333333]}]],[[{"lng":[-0.555730555,3.168114],"lat":[44.825813888,50.716573]}]],[[{"lng":[2.318288888,-4.480458333],"lat":[48.839333333,48.387777777]}]],[[{"lng":[5.919372,2.373611111],"lat":[45.571496,48.844722222]}]],[[{"lng":[2.373611111,5.027208],"lat":[48.844722222,47.32337]}]],[[{"lng":[3.090532,2.356666666],"lat":[50.371769,48.882777777]}]],[[{"lng":[2.36876,2.356666666],"lat":[51.03038,48.882777777]}]],[[{"lng":[8.6625,2.359166666],"lat":[50.106944444,48.876944444]}]],[[{"lng":[6.142447,2.373611111],"lat":[46.210217,48.844722222]}]],[[{"lng":[5.7147,2.373611111],"lat":[45.1908,48.844722222]}]],[[{"lng":[9.203988,2.373611111],"lat":[45.485658,48.844722222]}]],[[{"lng":[2.318288888,-1.145555555],"lat":[48.839333333,46.152777777]}]],[[{"lng":[6.629095833,2.373611111],"lat":[46.516784833,48.844722222]}]],[[{"lng":[2.318288888,-0.760833333],"lat":[48.839333333,48.076388888]}]],[[{"lng":[2.373611111,4.499722222],"lat":[48.844722222,46.765277777]}]],[[{"lng":[0.191944444,2.318288888],"lat":[47.994166666,48.839333333]}]],[[{"lng":[3.075277777,4.859444444],"lat":[50.639444444,45.760555555]}]],[[{"lng":[5.381111111,3.075277777],"lat":[43.303055555,50.639444444]}]],[[{"lng":[3.075277777,2.356666666],"lat":[50.639444444,48.882777777]}]],[[{"lng":[3.075277777,4.859444444],"lat":[50.639444444,45.760555555]}]],[[{"lng":[2.782777777,4.859444444],"lat":[48.869722222,45.760555555]}]],[[{"lng":[5.381111111,4.859444444],"lat":[43.303055555,45.760555555]}]],[[{"lng":[3.881038888,4.859444444],"lat":[43.604636111,45.760555555]}]],[[{"lng":[2.373611111,4.859444444],"lat":[48.844722222,45.760555555]}]],[[{"lng":[4.859444444,-1.6725],"lat":[45.760555555,48.103333333]}]],[[{"lng":[2.373611111,4.77882],"lat":[48.844722222,46.28291]}]],[[{"lng":[-3.682222222,5.381111111],"lat":[40.472222222,43.303055555]}]],[[{"lng":[2.782777777,4.859444444],"lat":[48.869722222,45.760555555]}]],[[{"lng":[5.381111111,2.782777777],"lat":[43.303055555,48.869722222]}]],[[{"lng":[5.381111111,3.075277777],"lat":[43.303055555,50.639444444]}]],[[{"lng":[5.381111111,4.859444444],"lat":[43.303055555,45.760555555]}]],[[{"lng":[-3.682222222,5.381111111],"lat":[40.472222222,43.303055555]}]],[[{"lng":[5.381111111,2.782777777],"lat":[43.303055555,48.869722222]}]],[[{"lng":[5.381111111,2.373611111],"lat":[43.303055555,48.844722222]}]],[[{"lng":[5.381111111,3.168114],"lat":[43.303055555,50.716573]}]],[[{"lng":[6.1775,2.359166666],"lat":[49.1098,48.876944444]}]],[[{"lng":[3.881038888,4.859444444],"lat":[43.604636111,45.760555555]}]],[[{"lng":[3.881038888,2.373611111],"lat":[43.604636111,48.844722222]}]],[[{"lng":[7.3433,2.373611111],"lat":[47.7426,48.844722222]}]],[[{"lng":[6.173611,2.359166666],"lat":[48.689722,48.876944444]}]],[[{"lng":[2.318288888,-1.541666666],"lat":[48.839333333,47.216666666]}]],[[{"lng":[2.318288888,-1.541666666],"lat":[48.839333333,47.216666666]}]],[[{"lng":[7.734263,-1.541666666],"lat":[48.585144,47.216666666]}]],[[{"lng":[7.261944444,2.373611111],"lat":[43.704444444,48.844722222]}]],[[{"lng":[4.366389,2.373611111],"lat":[43.8325,48.844722222]}]],[[{"lng":[8.6625,2.359166666],"lat":[50.106944444,48.876944444]}]],[[{"lng":[6.1775,2.359166666],"lat":[49.1098,48.876944444]}]],[[{"lng":[6.173611,2.359166666],"lat":[48.689722,48.876944444]}]],[[{"lng":[2.359166666,4.024166666],"lat":[48.876944444,49.259166666]}]],[[{"lng":[7.734263,2.359166666],"lat":[48.585144,48.876944444]}]],[[{"lng":[9.181666666,2.359166666],"lat":[48.783888888,48.876944444]}]],[[{"lng":[5.317222222,2.373611111],"lat":[43.455,48.844722222]}]],[[{"lng":[6.121667,2.373611111],"lat":[45.902222,48.844722222]}]],[[{"lng":[4.785833333,2.373611111],"lat":[43.921666666,48.844722222]}]],[[{"lng":[2.14,2.373611111],"lat":[41.378888888,48.844722222]}]],[[{"lng":[5.823483,2.373611111],"lat":[46.109425,48.844722222]}]],[[{"lng":[5.957778,2.373611111],"lat":[47.308889,48.844722222]}]],[[{"lng":[5.919372,2.373611111],"lat":[45.571496,48.844722222]}]],[[{"lng":[2.373611111,5.027208],"lat":[48.844722222,47.32337]}]],[[{"lng":[6.142447,2.373611111],"lat":[46.210217,48.844722222]}]],[[{"lng":[5.7147,2.373611111],"lat":[45.1908,48.844722222]}]],[[{"lng":[9.203988,2.373611111],"lat":[45.485658,48.844722222]}]],[[{"lng":[6.629095833,2.373611111],"lat":[46.516784833,48.844722222]}]],[[{"lng":[2.373611111,4.499722222],"lat":[48.844722222,46.765277777]}]],[[{"lng":[2.373611111,4.859444444],"lat":[48.844722222,45.760555555]}]],[[{"lng":[2.373611111,4.77882],"lat":[48.844722222,46.28291]}]],[[{"lng":[5.381111111,2.373611111],"lat":[43.303055555,48.844722222]}]],[[{"lng":[3.881038888,2.373611111],"lat":[43.604636111,48.844722222]}]],[[{"lng":[7.3433,2.373611111],"lat":[47.7426,48.844722222]}]],[[{"lng":[7.261944444,2.373611111],"lat":[43.704444444,48.844722222]}]],[[{"lng":[4.366389,2.373611111],"lat":[43.8325,48.844722222]}]],[[{"lng":[2.879733333,2.373611111],"lat":[42.696261111,48.844722222]}]],[[{"lng":[2.373611111,4.399444444],"lat":[48.844722222,45.443333333]}]],[[{"lng":[5.929722222,2.373611111],"lat":[43.128611111,48.844722222]}]],[[{"lng":[2.373611111,4.978611111],"lat":[48.844722222,44.991666666]}]],[[{"lng":[8.540177777,2.373611111],"lat":[47.378169444,48.844722222]}]],[[{"lng":[2.318288888,-0.556944],"lat":[48.839333333,47.464722]}]],[[{"lng":[2.318288888,0.165278],"lat":[48.839333333,45.654167]}]],[[{"lng":[-0.555730555,2.318288888],"lat":[44.825813888,48.839333333]}]],[[{"lng":[2.318288888,-4.480458333],"lat":[48.839333333,48.387777777]}]],[[{"lng":[2.318288888,-1.145555555],"lat":[48.839333333,46.152777777]}]],[[{"lng":[2.318288888,-0.760833333],"lat":[48.839333333,48.076388888]}]],[[{"lng":[0.191944444,2.318288888],"lat":[47.994166666,48.839333333]}]],[[{"lng":[2.318288888,-1.541666666],"lat":[48.839333333,47.216666666]}]],[[{"lng":[2.318288888,0.333055555],"lat":[48.839333333,46.582222222]}]],[[{"lng":[2.318288888,-4.092222],"lat":[48.839333333,47.994722]}]],[[{"lng":[2.318288888,-1.6725],"lat":[48.839333333,48.103333333]}]],[[{"lng":[2.318288888,-2.003995],"lat":[48.839333333,48.646584]}]],[[{"lng":[2.318288888,0.723611111],"lat":[48.839333333,47.386111111]}]],[[{"lng":[1.453611111,2.318288888],"lat":[43.611111111,48.839333333]}]],[[{"lng":[2.318288888,0.693611111],"lat":[48.839333333,47.389722222]}]],[[{"lng":[2.318288888,-2.7525],"lat":[48.839333333,47.665278]}]],[[{"lng":[2.781391,2.356666666],"lat":[50.2869,48.882777777]}]],[[{"lng":[3.090532,2.356666666],"lat":[50.371769,48.882777777]}]],[[{"lng":[2.36876,2.356666666],"lat":[51.03038,48.882777777]}]],[[{"lng":[3.075277777,2.356666666],"lat":[50.639444444,48.882777777]}]],[[{"lng":[-0.555730555,2.318288888],"lat":[44.825813888,48.839333333]}]],[[{"lng":[2.318288888,-1.541666666],"lat":[48.839333333,47.216666666]}]],[[{"lng":[2.318288888,-1.6725],"lat":[48.839333333,48.103333333]}]],[[{"lng":[2.879733333,2.373611111],"lat":[42.696261111,48.844722222]}]],[[{"lng":[2.318288888,0.333055555],"lat":[48.839333333,46.582222222]}]],[[{"lng":[2.318288888,-4.092222],"lat":[48.839333333,47.994722]}]],[[{"lng":[2.359166666,4.024166666],"lat":[48.876944444,49.259166666]}]],[[{"lng":[4.859444444,-1.6725],"lat":[45.760555555,48.103333333]}]],[[{"lng":[2.318288888,-1.6725],"lat":[48.839333333,48.103333333]}]],[[{"lng":[2.318288888,-1.6725],"lat":[48.839333333,48.103333333]}]],[[{"lng":[2.373611111,4.399444444],"lat":[48.844722222,45.443333333]}]],[[{"lng":[2.318288888,-2.003995],"lat":[48.839333333,48.646584]}]],[[{"lng":[2.318288888,0.723611111],"lat":[48.839333333,47.386111111]}]],[[{"lng":[7.734263,-1.541666666],"lat":[48.585144,47.216666666]}]],[[{"lng":[7.734263,2.359166666],"lat":[48.585144,48.876944444]}]],[[{"lng":[9.181666666,2.359166666],"lat":[48.783888888,48.876944444]}]],[[{"lng":[5.929722222,2.373611111],"lat":[43.128611111,48.844722222]}]],[[{"lng":[1.453611111,2.318288888],"lat":[43.611111111,48.839333333]}]],[[{"lng":[-0.555730555,3.168114],"lat":[44.825813888,50.716573]}]],[[{"lng":[5.381111111,3.168114],"lat":[43.303055555,50.716573]}]],[[{"lng":[2.318288888,0.693611111],"lat":[48.839333333,47.389722222]}]],[[{"lng":[2.373611111,4.978611111],"lat":[48.844722222,44.991666666]}]],[[{"lng":[2.318288888,-2.7525],"lat":[48.839333333,47.665278]}]],[[{"lng":[8.540177777,2.373611111],"lat":[47.378169444,48.844722222]}]]],null,null,{"interactive":true,"className":"","stroke":true,"color":"#03F","weight":5,"opacity":0.5,"fill":false,"fillColor":"#03F","fillOpacity":0.2,"smoothFactor":1,"noClip":false},null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]}],"limits":{"lat":[40.472222222,51.03038],"lng":[-4.480458333,9.203988]}},"evals":[],"jsHooks":[]}</script>
+<p>My first thought to look at the linestrings was to use geom_sf to make an arc diagram - I weirdly couldn’t figure out an easy way to do it with sf at first so I just used based ggplot2 and the old fashioned latitude / longitude approach with help from a <a href="https://datascience.blog.wzb.eu/2018/05/31/three-ways-of-visualizing-a-graph-on-a-map/">post by Markus Konrad</a>. This was actually a lot easier than I thought it’d be.</p>
+<pre class="r"><code>geom_map &lt;- borders(&quot;world&quot;, ylim = c(38, 52), xlim = c(-4.5, 18), size = .04,
+                    fill = &quot;white&quot;)
+plots &lt;- map(stations_sf$id, function(x){
+  station &lt;- stations_sf |&gt; filter(id == x) |&gt; pull(station)
+  e &lt;- routes_sf |&gt; 
+    filter(from == x)
+  n &lt;- stations_sf |&gt; 
+    filter(id %in% e$from | id %in% e$to)
+  ggplot(n) + 
+    geom_map +
+    geom_point(aes(x = lon, y = lat),
+               shape = 21, alpha = .5, stroke = 0.5, fill = &quot;black&quot;, color = &quot;black&quot;) +
+    geom_text_repel(aes(x = lon, y = lat, label = station),
+              size = 3, color = &quot;black&quot;, fontface = &quot;bold&quot;) +
+    geom_curve(data = e, aes(x = from_lon, y = from_lat, xend = to_lon, yend = to_lat), 
+               curvature = 0.33,
+               alpha = 0.5,
+               color = &quot;black&quot;) +
+    #coord_cartesian(ylim = c(38, 52), xlim = c(-4.5, 18)) +
+    labs(title = station, x = NULL, y = NULL) +
+    theme_void() +
+    theme(panel.background=element_rect(fill=&quot;#d7e9f5&quot;, colour=&quot;#d7e9f5&quot;))
+})
+walk(plots, print) </code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/arc_map_gif.gif" width="960" /></p>
+<p>I finally got the map above using sf by leveraging another package, <a href="https://luukvdmeer.github.io/sfnetworks/index.html">sfnetworks</a>, which combines sf and tidygraphs. This package is the perfect way to tie our two different threads of network and spatial analysis together.</p>
+<pre class="r"><code>network_sf &lt;- sfnetwork(stations_sf, routes_df, node_key = &quot;id&quot;, directed = F)
+network_sf &lt;- tidygraph::convert(
+  network_sf, 
+  to_spatial_explicit, 
+  .clean = TRUE
+)
+ggplot() +
+  geom_map +
+  geom_sf(data = st_as_sf(network_sf, &quot;edges&quot;), color = &quot;black&quot;) +
+  geom_sf(data = st_as_sf(network_sf, &quot;nodes&quot;), color = &quot;black&quot;) +
+  theme_void() +
+  theme(panel.background=element_rect(fill=&quot;#d7e9f5&quot;, colour=&quot;#d7e9f5&quot;))</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-1.png" width="960" /></p>
+<p>It also provides some really handy functionality like measuring edge length (i.e. distance) because it has both the graph data and the sf data. We can use that for all sorts of analysis including calculating the average speed of the routes (since we already have weighted average trip time), very cool!</p>
+<pre class="r"><code>network_sf &lt;- network_sf %E&gt;%
+  mutate(distance = edge_length()) |&gt; 
+  mutate(distance_km = as.numeric(sub(&quot;\\s+\\D+$&quot;, &quot;&quot;, measurements::conv_unit(distance, from = &quot;m&quot;, to = &quot;km&quot;)))) |&gt; 
+  mutate(avg_speed_kph = distance_km / (journey_time_weighted_avg / 60))
+
+ggplot() +
+  geom_map +
+  geom_sf(data = st_as_sf(network_sf, &quot;edges&quot;), aes(color = avg_speed_kph)) +
+  geom_sf(data = st_as_sf(network_sf, &quot;nodes&quot;), color = &quot;black&quot;) +
+  labs(title = &quot;Route Speeds (kph)&quot;, color = &quot;Avg kph&quot;) +
+  theme_void() +
+  theme(panel.background=element_rect(fill=&quot;#d7e9f5&quot;, colour=&quot;#d7e9f5&quot;),
+        legend.position = &quot;bottom&quot;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-11-1.png" width="960" /></p>
+<p>Finally, heavily borrowing from the package vignette, sfnetworks can use tidygraphs <a href="https://tidygraph.data-imaginist.com/reference/morphers.html">morphers</a> to do really neat things like community detection in edges. Here we morph the edges into the nodes place so that we can use Louvain community detection, which can only be done on nodes, and then assign those groups to the edges so we can visualize them.</p>
+<pre class="r"><code>grouped_net = network_sf %N&gt;%
+  morph(to_linegraph) %&gt;%
+  mutate(group = group_louvain()) %&gt;%
+  unmorph()
+grouped_net &lt;- grouped_net |&gt; 
+  activate(&quot;edges&quot;) %E&gt;%
+  st_as_sf() %&gt;%
+  transmute(group = as.factor(group))
+
+ggplot() +
+  geom_map +
+  geom_sf(data = st_as_sf(grouped_net, &quot;edges&quot;), aes(color = group)) +
+  geom_sf(data = st_as_sf(network_sf, &quot;nodes&quot;), color = &quot;black&quot;) +
+  labs(title = &quot;Louvain method for community detection&quot;, color = &quot;Groups&quot;) +
+  theme_void() +
+  theme(panel.background=element_rect(fill=&quot;#d7e9f5&quot;, colour=&quot;#d7e9f5&quot;),
+        legend.position = &quot;bottom&quot;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-12-1.png" width="960" /></p>
+</div>
+</div>
+</div>
+<div id="wrap-up" class="section level2">
+<h2>Wrap Up</h2>
+<p>I really wanted to get more experience with some of the network analysis packages in R - mission accomplished. This exercise morphed into a little bit more of a package demo than pure analysis, but I feel like I learned a lot of new tools / techniques that I’ll be able to leverage in the future. There’s still a lot more to learn with tidygraph, sf, and sfnetworks, but I feel like this gave a solid foundation. Hopefully others find it useful as well!</p>
+</div>
+<div class="footnotes footnotes-end-of-document">
+<hr />
+<ol>
+<li id="fn1"><p>Network analysis is huge area in analytics. Below are a few resources I’ve found helpful: <a href="https://www.data-imaginist.com/2017/introducing-tidygraph/">Introducing tidygraph</a>, <a href="https://www.data-imaginist.com/2018/tidygraph-1-1-a-tidy-hope/">tidygraph 1.1, A Tidy Hope</a>, <a href="https://www.data-imaginist.com/2019/1-giraffe-2-giraffe-go/">1 giraffe, 2 giraffe, GO!</a>, <a href="https://www.jessesadler.com/post/network-analysis-with-r/">Network Analysis with R by Jesse Sadler</a>, <a href="http://michaelntaylor.ca/post/2018/06/06/tidygraph-and-ggraph/">tidygraph &amp; ggraph by Michael Taylor</a>, <a href="https://kateto.net/networks-r-igraph">Network analysis &amp; visualization with R &amp; igraph</a><a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>The <a href="https://igraph.org/c/doc/igraph-Layout.html">igraph Manual, Ch. 20 Generating layouts for graph drawing</a>, provides detailed explanations, parameters, etc. for all the igraph layouts. The ggraph layout names match the <code>igraph::layout_with_*</code> function names.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
+<li id="fn3"><p>The <a href="http://graphlayouts.schochastics.net/">graphlayouts Package</a> provides provides detailed explanations, parameters, etc. for all the graphlayout functions.<a href="#fnref3" class="footnote-back">↩︎</a></p></li>
+<li id="fn4"><p><a href="https://www.data-imaginist.com/2017/ggraph-introduction-layouts/">Introduction to layouts</a> by Thomas Lin Pederson was a simple primer on layouts, <a href="https://robwiederstein.github.io/network_analysis/igraph.html#layout-of-nodes">Metwork Analysis: Layout of Nodes</a> by Robert Wiederstein covered a bit more using igraph, and <a href="http://blog.schochastics.net/post/stress-based-graph-layouts/">Stress based graph layouts</a> by David Schoch provided additional insights.
+[5^]: <a href="https://en.wikipedia.org/wiki/Simple_Features">Simple features Wikipedia page</a><a href="#fnref4" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
