@@ -4,7 +4,7 @@ author: Mark Druffel
 date: '2021-05-04'
 slug: french-train-delays
 categories: ["tidy-tuesday"]
-tags: ["tidyverse", "ggforce", "slickR"]
+tags: ["tidyverse", "tidygraph", "sf", 'sfnetworks', 'leaflet']
 output:
   blogdown::html_page:
     toc: true
@@ -523,22 +523,22 @@ tr:hover {
 </table>
 <p>Based on the summary table, we can create a date field (year + month), format station names from all upper to normal sentence, create a leg attribute (departure station + arrival station), and impute the appropriate missing values.</p>
 <pre class="r"><code># Add date, get rid of all caps for stations, create leg column, fill in missing service records
-service &lt;- full_trains %&gt;%
-  select(service, arrival_station, departure_station) %&gt;% 
-  group_by() %&gt;% 
-  distinct() %&gt;% 
-  filter(!is.na(service)) %&gt;% 
+service &lt;- full_trains |&gt;
+  select(service, arrival_station, departure_station) |&gt; 
+  group_by() |&gt; 
+  distinct() |&gt; 
+  filter(!is.na(service)) |&gt; 
   ungroup()
 
-trains &lt;- full_trains %&gt;%
-  mutate(across(starts_with(&quot;num_&quot;), ~replace_na(.x, 0))) %&gt;% 
-  select(-service) %&gt;% 
-  left_join(service) %&gt;%
+trains &lt;- full_trains |&gt;
+  mutate(across(starts_with(&quot;num_&quot;), ~replace_na(.x, 0))) |&gt; 
+  select(-service) |&gt; 
+  left_join(service) |&gt;
   mutate(
     date = as.Date(sprintf(&quot;%d-%02d-01&quot;, year, month)),
     departure_station = str_to_title(departure_station),
     arrival_station = str_to_title(arrival_station),
-    leg = glue::glue(&quot;{departure_station} to {arrival_station}&quot;)) %&gt;%
+    leg = glue::glue(&quot;{departure_station} to {arrival_station}&quot;)) |&gt;
   mutate(service = if_else(
     is.na(service),
     case_when(str_detect(leg,&quot;Madrid&quot;) ~ &quot;International&quot;,
@@ -548,26 +548,26 @@ trains &lt;- full_trains %&gt;%
               str_detect(leg, &quot;Zurich&quot;) ~ &quot;International&quot;,
               str_detect(leg, &quot;Geneve&quot;) ~ &quot;Internationl&quot;,
               T ~ &quot;National&quot;),
-    service)) %&gt;% 
+    service)) |&gt; 
   select(service, leg, date, everything())</code></pre>
 <p>Total trips and late arrivals appear to have a linear relationship, which makes sense. There is an upward trend and significantly more variability from month to month than I would have expected. It appears there may have been a strike sometime in May or July of 2016 and it looks like there may be seasonality in the number of trips.</p>
-<pre class="r"><code>trips &lt;- trains %&gt;%
-  group_by(date) %&gt;%
-  summarise(trips = sum(total_num_trips)) %&gt;%
-  ungroup() %&gt;% 
+<pre class="r"><code>trips &lt;- trains |&gt;
+  group_by(date) |&gt;
+  summarise(trips = sum(total_num_trips)) |&gt;
+  ungroup() |&gt; 
   ggplot(aes(x = date, y = trips)) +
   geom_line() +
   geom_smooth(method = loess, se = T) +
   scale_x_date(breaks = &quot;9 months&quot;, date_labels = &quot;%b-%Y&quot;) +
   scale_y_continuous(labels = scales::number_format(accuracy = .1, scale = 1/1000, suffix = &quot;K&quot;)) +
-  labs(y = &quot;Trips&quot;, x = &quot;Date&quot;, title = &quot;Scheduled Trips&quot;, subtitle = &quot;Overall service increased over the ~4 years&quot;) +
+  labs(y = &quot;Trips&quot;, x = &quot;Date&quot;, title = &quot;Scheduled Trips&quot;, subtitle = &quot;Overall service increased over the ~4 years&quot;) + 
   theme_blog()
 
-late_arrivals &lt;- trains %&gt;%
-  replace_na(list(num_arriving_late = 0)) %&gt;% 
-  group_by(date) %&gt;%
-  summarise(late = sum(num_arriving_late)) %&gt;%
-  ungroup() %&gt;% 
+late_arrivals &lt;- trains |&gt;
+  replace_na(list(num_arriving_late = 0)) |&gt; 
+  group_by(date) |&gt;
+  summarise(late = sum(num_arriving_late)) |&gt;
+  ungroup() |&gt; 
   ggplot(aes(x = date, y = late)) +
   geom_line() +
   geom_smooth(method = loess, se = T) +
@@ -580,12 +580,12 @@ late_arrivals &lt;- trains %&gt;%
 trips + late_arrivals</code></pre>
 <p><img src="{{< blogdown/postref >}}index_files/figure-html/trips_by_date-1.png" width="864" /></p>
 <p>To get a better look of each leg we can plot the trips &amp; late arrival data on heatmaps. Since the number of trips is not evenly distributed across the legs, it’s helpful to scale the data. We can use a log scale for the number of trips, but we can use a percentage for late arrivals since that’s easier to understand. A few legs had the majority of all trips (bright yellow) and a few of the legs didn’t start operating until January of 2018 (white). A legs had months where 40+ percent of all trips arrived late (e.g. June / July of 2018).</p>
-<pre class="r"><code>service &lt;- trains %&gt;%
-  group_by(departure_station, year, date) %&gt;% 
-  summarise(trips = sum(total_num_trips, na.rm = F), .groups = &quot;drop&quot;) %&gt;% 
-  arrange(departure_station) %&gt;%
+<pre class="r"><code>service &lt;- trains |&gt;
+  group_by(departure_station, year, date) |&gt; 
+  summarise(trips = sum(total_num_trips, na.rm = F), .groups = &quot;drop&quot;) |&gt; 
+  arrange(departure_station) |&gt;
   mutate(month = lubridate::month(date, label = T, abbr = T),
-         row = row_number()) %&gt;% 
+         row = row_number()) |&gt; 
   ggplot(aes(x = month, y = reorder(departure_station, -row), fill = trips)) +
   geom_tile() +
   scale_fill_viridis(labels = c(&quot;&quot;,&quot;Lowest&quot;,&quot;&quot;,&quot;&quot;,&quot;&quot;,&quot;&quot;,&quot;Highest&quot;,&quot;&quot;), n.breaks = 7, trans = c(&quot;log&quot;)) +
@@ -605,14 +605,14 @@ trips + late_arrivals</code></pre>
                    legend.direction=&quot;horizontal&quot;,
                    legend.key.width= unit(1, &#39;cm&#39;))
 
-late &lt;- trains %&gt;% 
-  group_by(departure_station, year, date) %&gt;% 
+late &lt;- trains |&gt; 
+  group_by(departure_station, year, date) |&gt; 
   summarise(late_arrivals = sum(num_arriving_late, na.rm = F),
-            trips = sum(total_num_trips, na.rm = F)) %&gt;% 
-  ungroup() %&gt;% 
+            trips = sum(total_num_trips, na.rm = F)) |&gt; 
+  ungroup() |&gt; 
   mutate(pct_late_arrivals = late_arrivals / trips, 
          month = lubridate::month(date, label = T, abbr = T),
-         row = row_number()) %&gt;% 
+         row = row_number()) |&gt; 
   ggplot(aes(x = month, y = reorder(departure_station, -row), fill = pct_late_arrivals)) +
   geom_tile() +
   scale_x_discrete(breaks = c(&quot;Jan&quot;,&quot;Apr&quot;,&quot;Jul&quot;,&quot;Oct&quot;)) +
@@ -1057,12 +1057,12 @@ ggplot() +
 <p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-11-1.png" width="960" /></p>
 <p>Finally, heavily borrowing from the package vignette, sfnetworks can use tidygraphs <a href="https://tidygraph.data-imaginist.com/reference/morphers.html">morphers</a> to do really neat things like community detection in edges. Here we morph the edges into the nodes place so that we can use Louvain community detection, which can only be done on nodes, and then assign those groups to the edges so we can visualize them.</p>
 <pre class="r"><code>grouped_net = network_sf %N&gt;%
-  morph(to_linegraph) %&gt;%
-  mutate(group = group_louvain()) %&gt;%
+  morph(to_linegraph) |&gt;
+  mutate(group = group_louvain()) |&gt;
   unmorph()
 grouped_net &lt;- grouped_net |&gt; 
   activate(&quot;edges&quot;) %E&gt;%
-  st_as_sf() %&gt;%
+  st_as_sf() |&gt;
   transmute(group = as.factor(group))
 
 ggplot() +

@@ -1,11 +1,4 @@
-base
-methods
-grDevices
 extrafont
-datasets
-utils
-graphics
-stats
 knitr
 htmltools
 markUtils
