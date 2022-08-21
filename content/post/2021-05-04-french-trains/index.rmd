@@ -4,7 +4,7 @@ author: Mark Druffel
 date: '2021-05-04'
 slug: french-train-delays
 categories: ["tidy-tuesday"]
-tags: ["tidyverse", "ggforce", "slickR"]
+tags: ["tidyverse", "tidygraph", "sf", 'sfnetworks', 'leaflet']
 output:
   blogdown::html_page:
     toc: true
@@ -64,7 +64,7 @@ library(ggrepel)
 library(sfnetworks)
 library(measurements)
 library(osmdata)
-full_trains <- tidytuesdayR::tt_load('2019-02-26') %>% 
+full_trains <- tidytuesdayR::tt_load('2019-02-26') |> 
   pluck('full_trains')
 ```
 
@@ -79,22 +79,22 @@ Based on the summary table, we can create a date field (year + month), format st
 
 ```{r init_trains}
 # Add date, get rid of all caps for stations, create leg column, fill in missing service records
-service <- full_trains %>%
-  select(service, arrival_station, departure_station) %>% 
-  group_by() %>% 
-  distinct() %>% 
-  filter(!is.na(service)) %>% 
+service <- full_trains |>
+  select(service, arrival_station, departure_station) |> 
+  group_by() |> 
+  distinct() |> 
+  filter(!is.na(service)) |> 
   ungroup()
 
-trains <- full_trains %>%
-  mutate(across(starts_with("num_"), ~replace_na(.x, 0))) %>% 
-  select(-service) %>% 
-  left_join(service) %>%
+trains <- full_trains |>
+  mutate(across(starts_with("num_"), ~replace_na(.x, 0))) |> 
+  select(-service) |> 
+  left_join(service) |>
   mutate(
     date = as.Date(sprintf("%d-%02d-01", year, month)),
     departure_station = str_to_title(departure_station),
     arrival_station = str_to_title(arrival_station),
-    leg = glue::glue("{departure_station} to {arrival_station}")) %>%
+    leg = glue::glue("{departure_station} to {arrival_station}")) |>
   mutate(service = if_else(
     is.na(service),
     case_when(str_detect(leg,"Madrid") ~ "International",
@@ -104,30 +104,30 @@ trains <- full_trains %>%
               str_detect(leg, "Zurich") ~ "International",
               str_detect(leg, "Geneve") ~ "Internationl",
               T ~ "National"),
-    service)) %>% 
+    service)) |> 
   select(service, leg, date, everything())
 ```
 
 Total trips and late arrivals appear to have a linear relationship, which makes sense. There is an upward trend and significantly more variability from month to month than I would have expected. It appears there may have been a strike sometime in May or July of 2016 and it looks like there may be seasonality in the number of trips.
 
 ```{r trips_by_date}
-trips <- trains %>%
-  group_by(date) %>%
-  summarise(trips = sum(total_num_trips)) %>%
-  ungroup() %>% 
+trips <- trains |>
+  group_by(date) |>
+  summarise(trips = sum(total_num_trips)) |>
+  ungroup() |> 
   ggplot(aes(x = date, y = trips)) +
   geom_line() +
   geom_smooth(method = loess, se = T) +
   scale_x_date(breaks = "9 months", date_labels = "%b-%Y") +
   scale_y_continuous(labels = scales::number_format(accuracy = .1, scale = 1/1000, suffix = "K")) +
-  labs(y = "Trips", x = "Date", title = "Scheduled Trips", subtitle = "Overall service increased over the ~4 years") +
+  labs(y = "Trips", x = "Date", title = "Scheduled Trips", subtitle = "Overall service increased over the ~4 years") + 
   theme_blog()
 
-late_arrivals <- trains %>%
-  replace_na(list(num_arriving_late = 0)) %>% 
-  group_by(date) %>%
-  summarise(late = sum(num_arriving_late)) %>%
-  ungroup() %>% 
+late_arrivals <- trains |>
+  replace_na(list(num_arriving_late = 0)) |> 
+  group_by(date) |>
+  summarise(late = sum(num_arriving_late)) |>
+  ungroup() |> 
   ggplot(aes(x = date, y = late)) +
   geom_line() +
   geom_smooth(method = loess, se = T) +
@@ -142,12 +142,12 @@ trips + late_arrivals
 
 To get a better look of each leg we can plot the trips & late arrival data on heatmaps. Since the number of trips is not evenly distributed across the legs, it's helpful to scale the data. We can use a log scale for the number of trips, but we can use a percentage for late arrivals since that's easier to understand. A few legs had the majority of all trips (bright yellow) and a few of the legs didn't start operating until January of 2018 (white). A legs had months where 40+ percent of all trips arrived late (e.g. June / July of 2018).
 ```{r heatmaps, fig.height = 12}
-service <- trains %>%
-  group_by(departure_station, year, date) %>% 
-  summarise(trips = sum(total_num_trips, na.rm = F), .groups = "drop") %>% 
-  arrange(departure_station) %>%
+service <- trains |>
+  group_by(departure_station, year, date) |> 
+  summarise(trips = sum(total_num_trips, na.rm = F), .groups = "drop") |> 
+  arrange(departure_station) |>
   mutate(month = lubridate::month(date, label = T, abbr = T),
-         row = row_number()) %>% 
+         row = row_number()) |> 
   ggplot(aes(x = month, y = reorder(departure_station, -row), fill = trips)) +
   geom_tile() +
   scale_fill_viridis(labels = c("","Lowest","","","","","Highest",""), n.breaks = 7, trans = c("log")) +
@@ -167,14 +167,14 @@ service <- trains %>%
                    legend.direction="horizontal",
                    legend.key.width= unit(1, 'cm'))
 
-late <- trains %>% 
-  group_by(departure_station, year, date) %>% 
+late <- trains |> 
+  group_by(departure_station, year, date) |> 
   summarise(late_arrivals = sum(num_arriving_late, na.rm = F),
-            trips = sum(total_num_trips, na.rm = F)) %>% 
-  ungroup() %>% 
+            trips = sum(total_num_trips, na.rm = F)) |> 
+  ungroup() |> 
   mutate(pct_late_arrivals = late_arrivals / trips, 
          month = lubridate::month(date, label = T, abbr = T),
-         row = row_number()) %>% 
+         row = row_number()) |> 
   ggplot(aes(x = month, y = reorder(departure_station, -row), fill = pct_late_arrivals)) +
   geom_tile() +
   scale_x_discrete(breaks = c("Jan","Apr","Jul","Oct")) +
@@ -650,12 +650,12 @@ ggplot() +
 Finally, heavily borrowing from the package vignette, sfnetworks can use tidygraphs [morphers](https://tidygraph.data-imaginist.com/reference/morphers.html) to do really neat things like community detection in edges. Here we morph the edges into the nodes place so that we can use Louvain community detection, which can only be done on nodes, and then assign those groups to the edges so we can visualize them. 
 ```{r fig.width = 10}
 grouped_net = network_sf %N>%
-  morph(to_linegraph) %>%
-  mutate(group = group_louvain()) %>%
+  morph(to_linegraph) |>
+  mutate(group = group_louvain()) |>
   unmorph()
 grouped_net <- grouped_net |> 
   activate("edges") %E>%
-  st_as_sf() %>%
+  st_as_sf() |>
   transmute(group = as.factor(group))
 
 ggplot() +
