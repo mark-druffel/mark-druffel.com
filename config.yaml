@@ -32,7 +32,7 @@ params:
   MathJaxVersion: 2.7.5
   customCSS: []
   customJS: ["js/fix-footnote.js"]
-  favicon: favicon.ico
+  favicon: bike.ico
   disable_highlight: false
   highlightjsCDN: //cdnjs.cloudflare.com/ajax/libs
   highlightjsLang: ["r", "yaml", "tex"]
