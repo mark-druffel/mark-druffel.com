@@ -1,0 +1,1046 @@
+---
+title: Building a blogdown site from scratch
+author: Mark Druffel
+date: '2022-01-05'
+slug: building-blogdown-site
+categories: []
+tags: ["blogdown"]
+output:
+  blogdown::html_page:
+    toc: true
+    toc_depth: 3 
+---
+
+<script src="{{< blogdown/postref >}}index_files/htmlwidgets/htmlwidgets.js"></script>
+<script src="{{< blogdown/postref >}}index_files/jquery/dist/jquery.min.js"></script>
+<script src="{{< blogdown/postref >}}index_files/d3/d3.min.js"></script>
+<link href="{{< blogdown/postref >}}index_files/metrics-graphics/dist/metricsgraphics.css" rel="stylesheet" />
+<link href="{{< blogdown/postref >}}index_files/metrics-graphics/dist/mg_regions.css" rel="stylesheet" />
+<script src="{{< blogdown/postref >}}index_files/metrics-graphics/dist/metricsgraphics.min.js"></script>
+<script src="{{< blogdown/postref >}}index_files/metrics-graphics/dist/mg_regions.js"></script>
+<script src="{{< blogdown/postref >}}index_files/metricsgraphics-binding/metricsgraphics.js"></script>
+
+<div id="TOC">
+<ul>
+<li><a href="#background" id="toc-background">Background</a>
+<ul>
+<li><a href="#what-is-blogdown" id="toc-what-is-blogdown">What is blogdown?</a>
+<ul>
+<li><a href="#learning-blogdown" id="toc-learning-blogdown">Learning blogdown</a></li>
+</ul></li>
+<li><a href="#what-is-hugo" id="toc-what-is-hugo">What is Hugo?</a>
+<ul>
+<li><a href="#learning-hugo" id="toc-learning-hugo">Learning Hugo</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#prerequisites" id="toc-prerequisites">Prerequisites</a>
+<ul>
+<li><a href="#html-hypertext-markup-language" id="toc-html-hypertext-markup-language">HTML (HyperText Markup Language)</a></li>
+<li><a href="#css-cascading-style-sheets" id="toc-css-cascading-style-sheets">CSS (Cascading Style Sheets)</a></li>
+<li><a href="#browser-developer-tools" id="toc-browser-developer-tools">Browser Developer Tools</a></li>
+<li><a href="#testing" id="toc-testing">Testing </a></li>
+<li><a href="#hugo-basics" id="toc-hugo-basics">Hugo Basics<br />
+</a>
+<ul>
+<li><a href="#themes" id="toc-themes">Themes<br />
+</a></li>
+<li><a href="#config-file" id="toc-config-file">Config file<br />
+</a></li>
+<li><a href="#static-files" id="toc-static-files">Static Files<br />
+</a></li>
+<li><a href="#content" id="toc-content">Content<br />
+</a></li>
+<li><a href="#templating" id="toc-templating">Templating<br />
+</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#build-a-site-from-scratch" id="toc-build-a-site-from-scratch">Build a site from scratch<br />
+</a>
+<ul>
+<li><a href="#project-setup" id="toc-project-setup">Project setup<br />
+</a></li>
+<li><a href="#customize-navbar" id="toc-customize-navbar">Customize Navbar<br />
+</a>
+<ul>
+<li><a href="#page-links" id="toc-page-links">Page Links<br />
+</a></li>
+<li><a href="#home-button" id="toc-home-button">Home Button<br />
+</a></li>
+<li><a href="#background-color" id="toc-background-color">Background Color</a></li>
+<li><a href="#fonts" id="toc-fonts">Fonts</a></li>
+</ul></li>
+<li><a href="#content-1" id="toc-content-1">Content<br />
+</a>
+<ul>
+<li><a href="#new-posts" id="toc-new-posts">New Posts</a></li>
+<li><a href="#permalinks" id="toc-permalinks">Permalinks<br />
+</a></li>
+<li><a href="#styles" id="toc-styles">Styles<br />
+</a></li>
+<li><a href="#style-vector-graphics" id="toc-style-vector-graphics">Style Vector Graphics<br />
+</a></li>
+<li><a href="#add-multimedia" id="toc-add-multimedia">Add Multimedia<br />
+</a></li>
+<li><a href="#markdown-formatting" id="toc-markdown-formatting">Markdown Formatting</a></li>
+</ul></li>
+<li><a href="#other-styling-components" id="toc-other-styling-components">Other Styling &amp; Components<br />
+</a>
+<ul>
+<li><a href="#browser-tab-title-image" id="toc-browser-tab-title-image">Browser Tab Title &amp; Image<br />
+</a></li>
+<li><a href="#code-folding" id="toc-code-folding">Code Folding<br />
+</a></li>
+<li><a href="#add-links-to-footer" id="toc-add-links-to-footer">Add Links to Footer</a></li>
+<li><a href="#misc-configs" id="toc-misc-configs">Misc Configs<br />
+</a></li>
+</ul></li>
+<li><a href="#deploy-w-hosting-service" id="toc-deploy-w-hosting-service">Deploy w/ Hosting Service<br />
+</a>
+<ul>
+<li><a href="#netlify" id="toc-netlify">Netlify<br />
+</a></li>
+<li><a href="#github-pages" id="toc-github-pages">Github Pages<br />
+</a></li>
+</ul></li>
+<li><a href="#deploy-internally-w-docker" id="toc-deploy-internally-w-docker">Deploy Internally w/ Docker </a></li>
+</ul></li>
+</ul>
+</div>
+
+<style type="text/css">
+</style>
+<div id="background" class="section level1">
+<h1>Background</h1>
+<p>I’ve created a few different versions of my blog using blogdown. Creating new blog with blogdown is so simple, but customizing can be finicky. Now blogdown 1.0, but was still sitting in a stack of posts that never made their way to the web when I started writing this :flushed: Now a year later I’m hoping to use blogdown internally at my new job to disseminate analysis more easily and I could really use that post as a guide :scream: So, for posterity I’m going to document the process as I go through it. If you’d like to learn how to create blogdown site or learn how to customize on your existing blogdown site, read on.<br />
+</p>
+<div id="what-is-blogdown" class="section level2">
+<h2>What is blogdown?</h2>
+<p><a href="https://pkgs.rstudio.com/blogdown/">blogdown</a> is an R package witten by <a href="https://en.wikipedia.org/wiki/Yihui_Xie">Yihui Xie</a> that wraps the <a href="https://gohugo.io/">Hugo web development framework</a>. Blogdown provides a tool for R developers to build their own blogs and portfolio sites from Hugo templates. There are several other R libraries to consider for publishing including <a href="https://pkgs.rstudio.com/blogdown/">distill</a>, <a href="https://pkgs.rstudio.com/bookdown/">bookdown</a>, and <a href="https://hugodown.r-lib.org/">hugodown</a>. We’ll cover blogdown only in this post.</p>
+<div id="learning-blogdown" class="section level3">
+<h3>Learning blogdown</h3>
+<p>If you’re new to blogdown I recommend this article from <a href="https://www.apreshill.com/blog/2020-12-new-year-new-blogdown/">Alison Presmanes Hill Hill</a>. Alison spent a few years working on the RStudio team and her blog is loaded with blogdown walk-throughs and gotcha’s. I highly recommend looking through her blog for other content. Additionally, Yihui wrote a <a href="https://bookdown.org/yihui/blogdown/">blogdown book</a> that I always keep handy. Finally, I occasionally look through Yihui’s <a href="https://stackoverflow.com/users/559676/yihui-xie">stack overflow answers</a> just to find tidbits of info about how rmarkdown, knitr, blogdown, etc. really work because they are so complicated and black-box like… It’s not specifically a resource for blogdown, but blogdown relies on the knitr and rmarkdown infrastructure so it helps to understand those packages behind the package. Aside from that, blogdown relies on rmarkdown. If you’ve not used rmarkdown before I recommend at least going through a bit of this <a href="https://rmarkdown.rstudio.com/articles_intro.html">guide</a> from RStudio.<br />
+</p>
+</div>
+</div>
+<div id="what-is-hugo" class="section level2">
+<h2>What is Hugo?</h2>
+<p><a href="https://gohugo.io/about/what-is-hugo/">Hugo</a> is a web development framework used to build <a href="https://www.geeksforgeeks.org/static-vs-dynamic-website/">static websites</a>. It’s is one of the <a href="https://jamstack.org/generators/">most popular static site generators</a> available at this time. If you’re looking to use blogdown, you do not necessarily need to know almost anything about Hugo to succeed. However, the more you understand Hugo the easier it becomes to customize your site, debug, etc.<br />
+</p>
+<div id="learning-hugo" class="section level3">
+<h3>Learning Hugo</h3>
+I’ll cover some of the basics in the next section, but I’ll barely scratch the surface on Hugo. If you want to learn more, the <a href="https://gohugo.io/getting-started/quick-start/">Hugo documentation</a> and a <a href="https://www.youtube.com/watch?v=qtIqKaDlqXo&amp;list=PLLAZ4kZ9dFpOnyRlyS-liKL5ReHDcj4G3">youtube playlist</a> Hugo provides are both good resources. I also found this <a href="https://webdesign.tutsplus.com/courses/getting-started-with-hugo-free-static-website-framework">tutorial</a> by Adi Purdila useful. I haven’t gone through and built my own Hugo site outside blogdown, but just watching the tutorial helped me understand how Hugo works for customization. This is probably a great starting point if you want to learn how to build your own template, but I’m not going there just yet…<br />
+
+<center>
+<img src="https://media.giphy.com/media/Uq3wLkZ2yzpkjvjOvi/giphy.gif" width="500" />
+</center>
+</div>
+</div>
+</div>
+<div id="prerequisites" class="section level1">
+<h1>Prerequisites</h1>
+<p>If you’ve never done web development at all there are some basic concepts and tools that are important to understand, but given that most of us have been on the internet for a few decades the learning curve isn’t too bad. I am not a web developer and have no business teaching web development so please take all this with a grain of salt. The reason I decided to spend time on it is simply that building and customizing a blogdown site requires very basic knowledge of web development. As I was writing the walk through I kept coming back to these concepts and it felt disingenous to write the post without making some attempt to cover them - knowing and acknowledging that my attempt will probably be clumsy at best :grimacing:<br />
+</p>
+<div id="html-hypertext-markup-language" class="section level2">
+<h2>HTML (HyperText Markup Language)</h2>
+<p><a href="https://simple.wikipedia.org/wiki/HTML">HTML</a> is the primary building block of web pages. There’s a ton to learn about HTML. I recommend <a href="https://www.w3schools.com/html/default.asp">w3school’s HTML tutorial</a> if you want to get a broad understanding. The two things I’d definitely recommend reviewing are <a href="https://www.w3schools.com/html/html_elements.asp">HTML elements</a> (aka HTML tags) and <a href="https://www.w3schools.com/html/html_attributes.asp">HTML attributes</a>. I always keep these lists of <a href="https://www.w3schools.com/tags/default.asp">HTML elements</a> and <a href="https://www.w3schools.com/tags/ref_attributes.asp">HTML attributes</a> handy.<br />
+</p>
+</div>
+<div id="css-cascading-style-sheets" class="section level2">
+<h2>CSS (Cascading Style Sheets)</h2>
+<a href="https://www.w3schools.com/whatis/whatis_css.asp">CSS</a> is code used to describe how html elements are to be displayed on a webpage, CSS “styles” a webpage. I borrowed the below image from a <a href="https://css-tricks.com/that-time-i-tried-browsing-the-web-without-css/">css-tricks post</a>, but the image on the right shows what Wikipedia’s homepage would look like without CSS. 
+<center>
+<img src="images/web_without_css.jpeg" width="800" />
+</center>
+<p>Again, I recommend <a href="https://www.w3schools.com/Css/">w3school’s CSS tutorial</a> to get a broad understanding of CSS. If you want to do something to style your site search it and don’t be afraid to post on stackoverflow. I find a lot of really specific CSS implementations on there that I’ve tried to jam into my personal site over time. Time more you do it the easier it gets. What you need to know in CSS can be especially specific to your goal, but I’d recommend reviewing <a href="https://www.w3schools.com/Css/css_syntax.asp">CSS syntax</a> and <a href="https://www.w3schools.com/Css/css_selectors.asp">CSS selectors</a> regardless because they’re very useful and fundamental.<br />
+</p>
+</div>
+<div id="browser-developer-tools" class="section level2">
+<h2>Browser Developer Tools</h2>
+<p>The <a href="https://en.wikipedia.org/wiki/Web_development_tools">browser web developer tools</a> that come in your standard issue web browser are critical to working on web development. The most commonly used tool within the set is the element inspector which usually is represented by a little square with an arrow in the corner. This video shows a few ways you can use the element inspector.<br />
+</p>
+{{% youtube "vi1mUy-nXFo" %}}
+<p>Using the element inspector allows you to find code related to an element so you can understand the code and make changes. We can try it on David Robinson’s <a href="http://varianceexplained.org/">website</a> by <a href="https://www.lifewire.com/how-to-clear-cache-2617980">opening web developer tools</a>, selecting the image of David, and changing the image link to another image on the web.<br />
+</p>
+<center>
+<img src="images/drob_v1.gif" width="800" />
+</center>
+<p>Changing the content can be useful for obvious reasons, but we can also modify the CSS around objects. We might not want the radial border around the image. We can find that CSS property if we select the image and look in the styles tab. Finding the right CSS property can require some knowledge, but it’s usually not too hard to figure looking at the different names and tinkering. David’s picture is inside an html <code>img</code> tag which contains a class <code>class="bio-photo</code>. The styles tab has a CSS selector called <code>.article-author-side .bio-photo</code>. That CSS selector has a property called <code>border-radius</code>. Un-check that property and see what the site would look like without it. A note, many of the bigger sites use system generated class names and things of that nature which can make this approach break down quickly.<br />
+</p>
+<center>
+<img src="images/drob_v2.gif" width="800" />
+</center>
+<p>We can also add new properties to see what a change might look like. Knowing all the styling options you can use is overwhelming, but just search by the html tag name, in this case <code>img</code>, and “CSS properties” (i.e. <a href="https://duckduckgo.com/?q=img+css+properties&amp;atb=v314-1&amp;ia=web">search img CSS properties</a>) and you’ll usually get useful results. On this one I ended up back at <a href="https://www.w3schools.com/css/css3_images.asp">w3schools CSS tutorial</a>.<br />
+</p>
+<center>
+<img src="images/drob_v3.gif" width="800" />
+</center>
+<p>We could probably take this pretty far, but I’ll cover one more CSS change. We can change the fonts of text in the site using the same basic approach. Fonts have several CSS properties, but the property that is similar to “font” inside of a word processing software is <a href="https://www.w3schools.com/Css/css_font.asp">font family</a>. Just like most areas in technology, fonts can get very “deep.” To my understanding, no fonts are perfectly web safe, meaning they may not work as intended in some browsers or contexts. <a href="https://www.w3schools.com/Css/css_font_websafe.asp">These fonts</a> are considered the safest, but they’re also a bit bland which might not be the best choice for all sites. Regardless of what font you choose, always have a few <a href="https://www.w3schools.com/Css/css_font_fallbacks.asp">fallback fonts</a>. Meaning, instead of deleting the font family listed, we can just add our new font to the front. There are obvious style considerations like this new font looking way different than the fallback, but that’s a different discussion. When setting fonts in the CSS, include a fallback that you intend to be the fallback rather than relying on the browser’s default. If you want to find reasonably web safe fonts, <a href="https://fonts.google.com/">Google fonts</a> has a lot of options.<br />
+</p>
+<center>
+<img src="images/drob_v4.gif" width="800" />
+</center>
+</div>
+<div id="testing" class="section level2">
+<h2>Testing </h2>
+<p>While we’re building our site we’ll want to test that it works. RStudio has a viewer pane that’s closest to development, which I love. However, there are always little differences that can pop up between what we see in RStudio and what shows up in the browser when it gets there. I recommend testing in a browser often. I use <a href="https://brave.com/">Brave</a> as my primary web browser, but I also use Chrome and Safari to test my pages during web development because most users will likely be in one of the two. </p>
+<center>
+<div class="figure">
+<img src="images/most_popular_browsers.png" width="600" alt="" />
+<p class="caption">New Project</p>
+</div>
+</center>
+<p>Beyond that, I also like to do a little bit of device testing. I don’t expect I have a ton of mobile users, but I still don’t want to have an awful mobile experience if I can help it. I use a tool called <a href="https://www.lambdatest.com/lt-browser">LT Browser</a> to quickly see how the site will look on various devices. </p>
+</div>
+<div id="hugo-basics" class="section level2">
+<h2>Hugo Basics<br />
+</h2>
+<p>As noted, I’ve never built a Hugo site without blogdown so take all my Hugo advice and instruction with a block of salt. That said, there are a few Hugo concepts that you do have to understand if you want to build a site with blogdown and / or customize the site. I’d recommend reading Alison’s article <a href="https://www.apreshill.com/blog/2020-12-how-much-hugo/#you-want-to-make-a-website-with-blogdown">How much hugo do I need to know?</a>. This will help you decide what parts you want to spend time trying to understand. I’ll be referencing parts of this article later as well, so it provides helpful context. Aside from that, here’s my high-level understanding of these concepts gives you more than enough context for the walk-through.<br />
+</p>
+<div id="themes" class="section level3">
+<h3>Themes<br />
+</h3>
+<p>Hugo sites are built off of themes, which I think of as a website template. Hugo provides mechanics to use a single template for many purposes by changing parameters before rendering the site. Hugo provides a <a href="https://themes.gohugo.io/">list of themes</a> or you can build your own. When selecting a theme to use, I recommend going to the github page and looking at the commit history, the contributors, and the documentation to assess how much you can rely on the theme. It’s obviously just a guess regardless, but I think it’s a good idea. Regardless, once you select a theme, test it with blogdown before you do anything else. Many themes don’t work with blogdown out of the box. I honestly don’t know exactly why, but I’d guess reasons vary from theme to theme.<br />
+</p>
+</div>
+<div id="config-file" class="section level3">
+<h3>Config file<br />
+</h3>
+<p>Hugo uses a <a href="https://gohugo.io/getting-started/configuration/">config file</a> with a list of variables that allow users to easily customize their site. For example, the variable <code>title</code> is used to set the title of your site that shows up in search engines and on the browser tab. Themes generally come with a config file, but the variables included vary from theme to theme. The <a href="https://gohugo.io/getting-started/configuration/#all-configuration-settings">config variables</a> are provided by Hugo so they can be added, but themes can also provide custom variables called <a href="https://gohugo.io/content-management/menus/#params">params</a>. Params can be in the config file or in a separate file in the config directory. Configs generally contain a <a href="https://gohugo.io/content-management/menus/#add-non-content-entries-to-a-menu">menu</a> which is how the site menu (i.e. navigation bar) is configured. The menu also has <a href="https://gohugo.io/variables/menus/#menu-entry-variables">variables</a> provided by Hugo and can be broken into a separate file in the config directory. This site is small so I don’t expect the config file to get too big, but for larger sites the <a href="https://gohugo.io/getting-started/configuration/#configuration-directory">config can be broken into several files</a>.<br />
+</p>
+</div>
+<div id="static-files" class="section level3">
+<h3>Static Files<br />
+</h3>
+<p><a href="https://gohugo.io/content-management/static-files/">Static files</a> get served as-is on the site root. This is useful for storing resources in the site’s root. The resources can be images, JS, CSS, etc. (e.g. an image on the home page).</p>
+</div>
+<div id="content" class="section level3">
+<h3>Content<br />
+</h3>
+<p>The content is the substance of the site and Hugo assumes so organizational structure of the site which is explain <a href="https://gohugo.io/content-management/organization/">here</a>. This part seems complicated, but in my experience this is the easiest part to understand when using blogdown.<br />
+</p>
+</div>
+<div id="templating" class="section level3">
+<h3>Templating<br />
+</h3>
+<p><a href="https://gohugo.io/templates/introduction/">Templating</a> is basically Hugo’s engine. It seems very intimidating when you start using blogdown, but it’s honestly not - we’re just not comfortable enough (or at least I’m not) with all the HTML, CSS, &amp; JS to fully understand how simple Hugo is. Hugo uses templated HTML in combination with other resources in order to dynamically build webpages when the site gets built. Sounds kind of crazy, but if you use <a href="https://glue.tidyverse.org/">glue</a> or <a href="https://jinja.palletsprojects.com/en/3.1.x/">jinja</a> it’s pretty familiar. Template variables and functions are accessed within <code>{{ }}</code>.<br />
+</p>
+</div>
+</div>
+</div>
+<div id="build-a-site-from-scratch" class="section level1">
+<h1>Build a site from scratch<br />
+</h1>
+<p>Alright I’ve laid out a lot of background info that most of you probably skipped over (no judgement) so let’s get right into it. I’m building this site using <a href="https://github.com/yihui/hugo-lithium">hugo-lithium</a> because it’s minimalist and supported by RStudio.<br />
+</p>
+<div id="project-setup" class="section level2">
+<h2>Project setup<br />
+</h2>
+<p>In Rstudio, go to File -&gt; New Project and there is a simple template. Alternatively, we can use the function <code>blogdown::new_site()</code>. Once the site is built, check that the template is working properly by running <code>blogdown::serve_site()</code>. For more details refer to <a href="https://bookdown.org/yihui/blogdown/a-quick-example.html#create-project">the book</a>.<br />
+</p>
+<center>
+<img src="images/new_project.gif" width="800" />
+</center>
+<p>Blogdown will automagically setup a repo structure (create folders and files) for the site, similarly to how <code>devtools::create_package()</code> does for <a href="https://r-pkgs.org/whole-game.html#create_package">R package development</a> if that’s a familiar process. Since blogdown is a wrapper around Hugo, the repo has resources for both blogdown and Hugo. I’ll get into more detail as we customize certain parts of the site, but Alison provided an easy cheat sheet for the folder structure in the below tweet.<br />
+</p>
+<center>
+{{% tweet "1078494406301212672" %}}
+</center>
+</div>
+<div id="customize-navbar" class="section level2">
+<h2>Customize Navbar<br />
+</h2>
+<p>The navbar we start with has a number of components including the home button, page links, and CSS properties. To modify it, we’ll start in the config file - <code>config.yaml</code>.<br />
+</p>
+<center>
+<div class="figure">
+<img src="images/header_v0.png" width="800" alt="" />
+<p class="caption">header v.0</p>
+</div>
+</center>
+<div id="page-links" class="section level3">
+<h3>Page Links<br />
+</h3>
+<p>We can modify page links by changing the <code>menu</code> object in <code>config.yaml</code>. The <code>name</code> is the text that will show up in the header, the <code>url</code> is the path that will be added to the site’s base url, and the <code>weight</code> dictates the order on the header (lower numbers show up first reading left to right). The urls must be relative to the context root or an absolute url. For example, for the site <a href="www.mark-druffel.com">www.mark-druffel.com</a>, using <code>/about/</code> in the menu would go to <a href="wwww.mark-druffel.com/about">wwww.mark-druffel.com/about</a>. and <code>www.duckduckgo.com</code> would go to that external site. This is very straight forward, but using absolute paths can be useful to forward a user to a resume or link in a shiny app.<br />
+</p>
+<pre class="default"><code>menu:
+  main:
+    - name: &quot;About&quot;
+      url: /about/
+      weight: 1
+    - name: &quot;Blog&quot;
+      url: /post/
+      weight: 2</code></pre>
+</div>
+<div id="home-button" class="section level3">
+<h3>Home Button<br />
+</h3>
+<p>The <code>logo</code> object seems to be the home button, but it’s not immediately apparent where the <code>logo.png</code> file comes from. If you poke around the folders you’ll find the image at <code>~/themes/hugo-lithium/static/images/logo.png</code>. You can add another image file there and change the config to update your header, but remember Alison warned us not to touch <code>~/themes</code>. Changing the file in <code>~/themes</code> will technically work, but the safer way to make the change is by adding the new logo to <code>~/static</code>. Blogdown will take files from <code>~/static</code> in replacement of files in <code>~themes/.../static</code>. We’ll use static for a number of modifications so it’s easiest to create a few required folders now.<br />
+</p>
+<pre class="r"><code>fs::dir_create(&quot;static/css&quot;)
+fs::dir_create(&quot;static/fonts&quot;)
+fs::dir_create(&quot;static/images&quot;)
+fs::dir_create(&quot;static/js&quot;)</code></pre>
+<p>As you can probably guess, we’ll use the <code>~/static/images</code> folder for the new logo. I added the image file, modified <code>config.yaml</code> to reflect the new file name,
+and ran <code>blogdown::serve_site()</code> again. The new image loaded, but the logo doesn’t look right. My image is a rectangle and the edges are being shaved off.<br />
+</p>
+<pre class="default"><code>  logo:
+    alt: Logo
+    height: 50
+    url: home_logo.svg
+    width: 50</code></pre>
+<center>
+<img src="images/header_v1.png" width="600" />
+</center>
+<p>This is just a CSS property. We can use the element inspector see the CSS properties on the logo element. The CSS selector <code>.nav-logo img</code> has a <code>border-radius</code> that looks like a good candidate. We confirm by un-checking the property from that selector.<br />
+</p>
+<center>
+<img src="images/header_v1_browser_dev_tools.gif" width="800" />
+</center>
+<p>Now that we know the thing we want to change is coming from CSS, we need to modify the CSS file for the theme. Again, we’ll work from <code>~/static</code> not <code>~/themes</code>. You can simply copy the <code>main.css</code> file to static using the code below, open the css file, and comment out or delete line 69. CSS comments are applied like this - <code>/* border-radius: 100%; */</code>.<br />
+</p>
+<pre class="r"><code>fs::file_copy(&quot;themes/hugo-lithium/static/css/main.css&quot;, &quot;static/css/main.css&quot;, overwrite = F)
+usethis::edit_file(&quot;static/css/main.css&quot;)</code></pre>
+<p>Now the logo should load without the border radius. However, it’s possible it won’t even though the code is fine. Initially when I ran <code>blogdown::serve_site()</code> it had the border radius on all the browsers I tried. I restarted my R session and still had the issue. When I restarted RStudio and reran <code>blogdown::serve_site()</code> it worked in Brave, but it still didn’t work in Chrome (shown below). I’ve seen this behavior in a few situations using blogdown and I think there are a few reasons this can happen, but since it was working in one browser and not the other it seemed to be due to browser caching. I’d recommend reserving a specific browser for testing and continually clearing browsing data. This <a href="https://www.lifewire.com/how-to-clear-cache-2617980">article</a> explains a bit more about browsing data and instructions on deleting it.<br />
+</p>
+<center>
+<div class="figure">
+<img src="images/header_v1_chrome_cache.png" width="800" alt="" />
+<p class="caption">browser caches css</p>
+</div>
+</center>
+<p>Since the navbar is a pretty important part of the experience, it’s important it works everywhere. We can do device testing using LT Browser. My logo is pretty large and for some of the smaller devices it took over the header and moved the buttons. We can fix that for smaller devices specifically in the CSS. CSS has an <code>@media</code> rule that can be used to apply different styles to different devices based on things such as the screen size of the browser session. This CSS file already had an <code>@media</code> section setup, but the code I found on <a href="https://www.w3schools.com/cssref/css3_pr_mediaquery.asp">w3schools</a> worked more consistently when I tested so I updated teh <code>@media</code> rule on line 253 to include <code>only screen and</code>. Additionally, we’ll add a <code>max-height</code> &amp; <code>max-width</code> starting at line 262 to shrink the logo within this <code>@media</code> rule. The change fixed the issue on all devices.<br />
+</p>
+<pre class="css"><code>/* main.css */
+@media only screen and (max-width: 600px) {
+  .nav-logo img {
+    max-height: auto;
+    max-width: 150px;
+  }
+}</code></pre>
+<center>
+<img src="images/header_v1_screen_testing.png" width="800" />
+</center>
+</div>
+<div id="background-color" class="section level3">
+<h3>Background Color</h3>
+<p>Again, we can use the element inspector to figure out which CSS selector and property to change for the background color. The <code>.header</code> selector has a <code>background</code> property. We can replace that property on line 44 with a new color. Sometimes if I can’t find where a color is coming from in the web page, I use <a href="https://colorslurp.com/">Color Slurp</a> to pluck the color hex from the screen and search in the CSS files.<br />
+</p>
+<pre class="css"><code>/* main.css */
+.header {
+  padding: 20px 0;
+  position: relative;
+  background: #F6F9FB;
+  border-bottom: 1px solid #eaeaea;
+}</code></pre>
+</div>
+<div id="fonts" class="section level3">
+<h3>Fonts</h3>
+<p>If you want to use different fonts on the navbar (or anywhere else on the site), you’ll need to load new fonts. There are two ways I know of to accomplish this, download font files and import them from a folder or import them a font API in our CSS. I recommend the API route because I think it’s less work, but there are reasons you might want to download the files, namely if you plan to render the site without internet or in an environment with firewalls (that may interfere with API calls).</p>
+<div id="download-font-files" class="section level4">
+<h4>Download Font Files</h4>
+<p>To download the font files and import them, we need to move the <code>foncts.css</code> to <code>~/static/css</code>. The <code>fonts.css</code> file sets up fonts for the site, which could be done in <code>main.css</code>.<br />
+</p>
+<p>We also need to move the font files themselves. We can define a font class, but the site still needs a font file to implement that font, similar to installing new fonts on your computer. Blogdown stores font files in <code>~/static/fonts</code>. We can get fonts from a lot of places, but a great resource is <a href="https://fonts.google.com/">Google Fonts</a>. Select a font and download the files. One of the fonts I selected, Rubik, provided a variable font instead of a static font - you can read about the difference <a href="https://www.lambdatest.com/blog/variable-fonts-cross-browser-compatibility/">here</a>. The files included are all .ttf, but we need <a href="https://www.w3schools.com/css/css3_fonts.asp">.woff2</a>. We can use this <a href="https://anyconv.com/ttf-to-woff2-converter/">free conversion tool</a>. Once the files are converted we can add them to our <code>~/static/fonts</code> folder.<br />
+</p>
+<pre class="r"><code># Copy &amp; Edit CSS
+fs::file_copy(&quot;themes/hugo-lithium/static/css/fonts.css&quot;, &quot;static/css/fonts.css&quot;, overwrite = F)
+usethis::edit_file(&quot;static/css/fonts.css&quot;)
+
+# Copy font files
+fs::dir_copy(&quot;themes/hugo-lithium/static/fonts&quot;, &quot;static&quot;)</code></pre>
+<center>
+<img src="images/header_v2_fonts_folder.png" width="600" />
+</center>
+<p>After adding the fonts to the folder, we need to import the fonts in our CSS. We can use the example from the variable font documentation as-is, but you can read more about the <code>@font-face</code> rule <a href="https://www.w3schools.com/cssref/css3_pr_font-face_rule.asp">here</a>.</p>
+<pre class="css"><code>@font-face {
+    font-family: &#39;Rubik&#39;;
+    src: url(&#39;../fonts/Rubik-VariableFont_wght.woff2&#39;) format(&#39;woff2 supports variations&#39;),
+       url(&#39;../fonts/Rubik-VariableFont_wght.woff2&#39;) format(&#39;woff2-variations&#39;);
+    font-weight: 100 900;
+    font-stretch: 25% 151%;
+}</code></pre>
+</div>
+<div id="use-font-api" class="section level4">
+<h4>Use Font API<br />
+</h4>
+<p>Alternatively, we can directly import the fonts into our CSS. I recommend this as it’s much easier, but it requires an internet connection when rendering the site. To do this <a href="https://fonts.google.com/">select a font</a>, choose the styles, and copy the style sheet code. Make sure to select all the styles and weights you want available.<br />
+</p>
+<center>
+<img src="images/font_api_import.png" width="600" />
+</center>
+<pre class="css"><code>@import url(&#39;https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;800;900&amp;display=swap&#39;);
+@import url(&#39;https://fonts.googleapis.com/css2?family=Overpass:wght@100;500;700;800;900&amp;display=swap&#39;);
+@import url(&#39;https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;500;700;900&amp;display=swap&#39;);
+@import url(&#39;https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&amp;display=swap&#39;);
+@import url(&#39;https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&amp;display=swap&#39;);</code></pre>
+</div>
+<div id="apply-new-fonts" class="section level4">
+<h4>Apply New Fonts<br />
+</h4>
+<p>We can add we can add the font to HTML elements or CSS selectors’ properties. We want to change the font of the navbar buttons so we’ll change the font-family property of the CSS selector <code>.nav-links li</code>. We can also make other changes like increasing font-size, weight, etc. Regarding font-size, you can use <code>rem</code> or <code>em</code> instead of <code>px</code> sizes, which scale to the browser settings, learn more <a href="https://zellwk.com/blog/rem-vs-em/">here</a>. I chose to use <code>rem</code>. Also, I set <a href="https://www.w3schools.com/cssref/css_fonts_fallbacks.asp">fallback fonts</a> as recommended if you read about <a href="https://www.w3schools.com/cssref/css_websafe_fonts.asp">web safe fonts</a>. I don’t think it’s necessary to fall back to <code>serif</code> or <code>monospace</code> unless you want to ensure a specific typeface, the browser will fallback to something automatically.<br />
+</p>
+<pre class="css"><code>body {
+  font-family: Roboto, Merriweather;
+  font-size: 1rem;
+}
+
+.nav-links li {
+  display: inline-block;
+  margin: 0 0 0 15px;
+  font-family: Rubik, Overpass;
+  font-size: 1.25rem;
+}</code></pre>
+<p>That all looks great, but it’d also be nice to have some behavior when the user hovers on the button. We can do that by modifying a CSS selector with <code>:hover</code>. The <a href="https://www.w3schools.com/cssref/sel_hover.asp"><code>:hover</code></a> is a CSS Pseudo-selector applied to elements when you mouse over them. There are many Pseudo-selectors available you can read about <a href="https://www.w3schools.com/css/css_pseudo_classes.asp">here</a>. The main CSS file already has a <code>.nav-links a:hover</code> selector so we can add a <code>font-weight</code> and <code>text-decoration</code> property to that. There’s a lot more we can do with buttons, but this site is very minimalist so I think this style works well. However, you can see several other options and how to implement them <a href="https://www.w3schools.com/csS/css3_buttons.asp">here</a>. </p>
+<pre class="css"><code>.nav-links a:hover {
+  color: #000;
+  font-weight: bold;
+  text-decoration: underline;
+}</code></pre>
+<p>I also decided to remove <code>5px</code> worth of padding from the navbar to make it just a tad shorter…<br />
+</p>
+<pre class="css"><code>.header {
+  padding: 15px 0;
+  position: relative;
+  background: #F6F9FB;
+  border-bottom: 1px solid #eaeaea;
+}</code></pre>
+<p>Now we have a simple, but functional navbar!<br />
+</p>
+<center>
+<img src="images/navbar_with_fonts.gif" width="450" />
+</center>
+</div>
+</div>
+</div>
+<div id="content-1" class="section level2">
+<h2>Content<br />
+</h2>
+<p>The navbar spans across all the pages, but the content is each of the pages under the navbar. Site content goes in, you guessed it, <code>~/content/</code>. The site will have an about page and posts by default, but you can add as many pages directly under <code>~/content/</code> as you’d like. Just don’t forget to add them to the menu in your <code>config.yaml</code> so the user can navigate to them. Beyond pages directly under <code>~/content/</code>, the Hugo theme will generally have some default folders including <code>~/post/</code>, which is the default location for blog posts.<br />
+</p>
+<div id="new-posts" class="section level3">
+<h3>New Posts</h3>
+<p>To create posts, I typically copy old posts because I customize my yaml header a bit. However, for a new site you can either copy one of the demo posts included or just use the RStudio add-in (shown below).<br />
+</p>
+<center>
+<img src="images/new_post.png" width="550" />
+</center>
+</div>
+<div id="permalinks" class="section level3">
+<h3>Permalinks<br />
+</h3>
+<p>Each post’s url is generated by by Hugo using the the <code>config.yaml</code> and the document slug from the post’s yaml header. So if our site was <code>www.mark-druffel.com</code> and we used the configuration below, a post url would be <code>www.mark-druffel.com/2021/10/15/this-posts-title</code>. I personally find that to be overkill because I don’t post multiple times a day and my titles aren’t likely to be the same so I just use <code>post: /:year/:slug/</code> for my blog.<br />
+</p>
+<pre class="default"><code>permalinks:
+  post: /:year/:month/:day/:slug/</code></pre>
+</div>
+<div id="styles" class="section level3">
+<h3>Styles<br />
+</h3>
+<p>There are a number of changes that can be made to improve the look and feel of all pages under <code>~/content/</code>, but for this site I’m sticking very close to the theme. Just know, you can change any of the CSS styles the same way we did with the navbar to apply CSS properties across all the content on the site! The one thing we will change for this site is fonts.<br />
+</p>
+<div id="fonts-1" class="section level4">
+<h4>Fonts<br />
+</h4>
+<p>We already changed fonts in the navbar so I won’t walk back through the entire process, but here’s the CSS code I used to modify fonts throughout my content. I just repeated the some process of finding parts of the page I wanted to modify, finding the CSS selectors, importing the font I wanted, and applying it to the CSS selector. </p>
+<pre class="css"><code>.nav-links li {
+  display: inline-block;
+  margin: 0 0 0 15px;
+  font-family: Rubik, Overpass;
+  font-size: 1.25rem;
+}
+
+h1, h2, .article-title {
+  font-family: Roboto, Merriweather;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+h3, h4, .article-duration, .archive-item-link {
+  font-family: Roboto, Merriweather;
+  font-size: 1.3em;
+  font-weight: bold;
+}
+
+h5, h6, .footer {
+  font-family: Roboto, Merriweather;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.article-date {
+  font-family: Roboto, Merriweather;
+  font-size: .9rem;
+}
+
+body {
+  font-family: Roboto, Merriweather;
+  font-size: 1rem;
+}
+
+code {
+  font-family: Fira Code, Source Code Pro, monospace;
+  font-weight: 300;
+}</code></pre>
+<p>Now we have a blog with a custom navbar and fonts throughout all of the content. However, you might notice some content doesn’t pick up our CSS configurations.<br />
+</p>
+<center>
+<img src="images/ggplot2_no_font_change.png" width="350" />
+</center>
+</div>
+<div id="style-raster-graphics" class="section level4">
+<h4>Style Raster Graphics<br />
+</h4>
+<p>When we publish blog posts we’ll render all sorts of content using R libraries. Unfortunately, the outputs from our R code may not easily integrate to our site and this can be one of the trickier parts of maintaining a nice looking blog, especially if you choose a highly styled theme :grimacing: In this case, the image a <a href="https://www.adobe.com/creativecloud/file-types/image/comparison/raster-vs-vector.html">raster graphic</a>. Raster graphics are image files (pixels), which have no use for CSS code. We need to apply the same properties to our R graphics to match the style of the site. This applies to any plotting using the graphics device including <a href="https://ggplot2.tidyverse.org/">ggplot2</a> :astonished:<br />
+</p>
+<center>
+<img src="images/ggplot2_png_source.png" width="400" />
+</center>
+<p>We can resolve this problem a few different ways, but the first and most obvious approach is to <a href="https://ggplot2-book.org/polishing.html">customize the ggplot2 theme</a>. The <a href="https://ggplot2.tidyverse.org/reference/theme.html">theme()</a> function in ggplot2 provides a huge number of settings that can be used to customize the output including color, font, background, etc. This really becomes more of a ggplot2 tutorial, so I’m going to skip a bit of the details but the aforementioned resources should provide more than enough to customize your ggplot2 output for your blog. I try to be DRY (do not repeat yourself) when possible so I created a few themes for my blog for different visual types (e.g. one for standard visuals, one for faceted plots, one for non-grid based plots like network diagrams, etc.). Below is a gist of my standard theme if it’s a helpful starting point. You can choose existing themes and add onto them as show below (i.e. <code>theme_minimal() + theme(...)</code>).<br />
+</p>
+<pre class="r"><code>blogdown::shortcode(&quot;gist&quot;, &quot;mark-druffel&quot;, &quot;83b839abe61d056a2b4cef81d09f7bcc&quot;)</code></pre>
+{{% gist "mark-druffel" "83b839abe61d056a2b4cef81d09f7bcc" %}}
+<p>Depending how you style your blog, I think you could also use <a href="https://rstudio.github.io/thematic/">thematic</a> and <a href="https://rstudio.github.io/bslib/">bslib</a>, but since the blog doesn’t use bootstrap by default I personally haven’t tried to do that… Aside from the theme, some other helpful resources when using ggplot2 in blogdown include <a href="https://jrnold.github.io/ggthemes/reference/index.html">ggthemes</a>, <a href="https://ragg.r-lib.org/">ragg</a>, <a href="https://github.com/yixuan/showtext">showtext</a>, and <a href="https://wilkelab.org/ggtext/">ggtext</a>.</p>
+<div id="ggthemes" class="section level5">
+<h5>ggthemes<br />
+</h5>
+<p>Library with complete ggplot2 themes including pre-built color scale functions. I don’t use ggthemes on my blog, but you could adopt a theme from there if any fit the style of your site which would simplify things tremendously. </p>
+</div>
+<div id="ragg" class="section level5">
+<h5>ragg<br />
+</h5>
+<p>The ragg library will simply improve R’s raster graphics rendering performance and quality. It will make ggplot2 output look sharper.</p>
+</div>
+<div id="showtext" class="section level5">
+<h5>showtext<br />
+</h5>
+<p>The showtext library makes it easier to use non-standard fonts with the R graphics device. Again, our site’s CSS <strong>is not</strong> available to ggplot2 when we render plots. Therefore, we’ll have to either install fonts on our machine (similar to adding them to a folder for the site) or load them from an API (similar to importing them in our CSS from the fonts API). Then we need to make them available to the R session. You can see an example in the <a href="https://cran.r-project.org/web/packages/showtext/vignettes/introduction.html">package vignettes</a>. Instructions for installing fonts on a machine will vary by OS, but it’s very simple to do on Linux, Mac, or Windows if you just use a search engine.<br />
+</p>
+</div>
+<div id="ggtext" class="section level5">
+<h5>ggtext<br />
+</h5>
+<p>The ggtext library allows the use of markdown syntax inside ggplot2. This <strong>does not</strong> change your theme, it’s just an easy way to bold titles and things like that on an individual plot.<br />
+</p>
+<p>Ok let’s look apply this stuff to our aforementioned plot from the demo post. Open <code>~/content/post/&lt;date&gt;-r-markdown/index.Rmd</code>. Load the necessary libraries, load the fonts, run <code>showtext_auto()</code> to make the fonts available, and create a theme function you’ll use on your plot. I used a theme based on <code>theme_void()</code> since the demo is a pie chart.<br />
+</p>
+<pre class="r"><code>library(ragg)
+library(showtext)
+library(tidyverse)
+library(ggrepel)
+# Tell knitr to use ragg for graphics
+knitr::opts_chunk$set(dev = &quot;ragg_png&quot;)
+# font_add_google is a function in sysfonts which is loaded by showtext
+font_add_google(&quot;Rubik&quot;, &quot;rubik&quot;)
+font_add_google(&quot;Roboto&quot;, &quot;roboto&quot;)
+font_add_google(&quot;Fira Code&quot;, &quot;firaCode&quot;)
+# Adding a noticeable font just to make sure everything is working
+font_add_google(&quot;Homemade Apple&quot;, &quot;homemadeApple&quot;)
+showtext_auto()
+theme_void_blog &lt;- function(...){
+  ggplot2::theme_void() + 
+    ggplot2::theme(
+      text = ggplot2::element_text(
+        family = &quot;roboto&quot;,
+        size = 11, 
+        inherit.blank = FALSE),
+      title = ggplot2::element_text(
+        family = &quot;homemadeApple&quot;,
+        face = &quot;bold&quot;,
+        size = 18, 
+        inherit.blank = FALSE,
+        hjust = .5),
+      plot.subtitle = ggplot2::element_text(
+        family = &quot;homemadeApple&quot;,
+        size = 14, 
+        inherit.blank = FALSE), 
+    legend.title = ggplot2::element_text(
+      family = &quot;rubik&quot;, 
+      size = 12,
+      face = &quot;bold&quot;,
+      inherit.blank = FALSE,
+      hjust = .5), 
+    legend.text = ggplot2::element_text(
+      family = &quot;roboto&quot;, 
+      color = &quot;#33334D&quot;, 
+      size = 10, hjust = 0)
+    ) + 
+    ggplot2::theme(...)
+}</code></pre>
+<p>This demo file uses the <code>pie()</code> function from base R. Nothing wrong with the function, but I’m not as familiar with the base R plotting tools so I’m going to use ggplot2 instead. The labels actually aren’t as simple with ggplot, but I just used <a href="https://ggrepel.slowkow.com/">ggrepel</a> to make the labeling simpler. The new fonts should load and mostly the same visualization should render with your new fonts. </p>
+<pre class="r"><code>tibble::tibble(
+  #value = c(280, 60, 20),
+  value = c(280, 60, 20),
+  name = c(&#39;Sky&#39;, &#39;Shady side of pyramid&#39;, &#39;Sunny side of pyramid&#39;),
+  color = c(&#39;#0292D8&#39;, &#39;#F7EA39&#39;, &#39;#C4B632&#39;)
+) |&gt; 
+  ggplot(aes(x = &quot;&quot;, y = value, label = name, fill = color)) + 
+  geom_col() + 
+  coord_polar(theta = &quot;y&quot;, start = pi / 1.275, direction = -1) +
+  scale_fill_identity() +
+  geom_text_repel(family = &quot;roboto&quot;, size = 5, nudge_x = .6, show.legend = FALSE, segment.color = &quot;transparent&quot;) +
+  labs(title = &quot;To make sure showtext is working&quot;) +
+  theme_void_blog() </code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+</div>
+</div>
+</div>
+<div id="style-vector-graphics" class="section level3">
+<h3>Style Vector Graphics<br />
+</h3>
+<p>R libraries don’t just produce raster graphics like plots from ggplot2, many libraries use the <a href="https://www.htmlwidgets.org/">htmlwidgets</a> framework which uses HTML, CSS, and JavaScript to produce interactive visualizations / widgets. Depending on exactly how the widget is set up, it will inherit CSS properties from your site. However, you may want to create new CSS properties or apply existing properties to specific parts of the widget.<br />
+</p>
+<p>If you add the code below to a new block inside <code>~/content/post/&lt;date&gt;-r-markdown/index.Rmd</code> and run you’ll create a d3.js scatter plot from the <a href="https://hrbrmstr.github.io/metricsgraphics/">metricsgraphics</a> library.<br />
+</p>
+<pre class="r"><code>library(metricsgraphics)
+mtcars %&gt;%
+  mjs_plot(x=wt, y=mpg, width=600, height=500) %&gt;%
+  mjs_point(color_accessor=carb, size_accessor=carb) %&gt;%
+  mjs_labs(x=&quot;Weight of Car&quot;, y=&quot;Miles per Gallon&quot;) </code></pre>
+<div id="mjs-ade5bd3e141e062cb8d26198563470" class="metricsgraphics html-widget" style="width:600px;height:500px;"></div>
+<div id="mjs-ade5bd3e141e062cb8d26198563470-legend" class="metricsgraphics html-widget-legend"></div>
+<script type="application/json" data-for="mjs-ade5bd3e141e062cb8d26198563470">{"x":{"forCSS":null,"regions":null,"orig_posix":false,"data":{"mpg":[21,21,22.8,21.4,18.7,18.1,14.3,24.4,22.8,19.2,17.8,16.4,17.3,15.2,10.4,10.4,14.7,32.4,30.4,33.9,21.5,15.5,15.2,13.3,19.2,27.3,26,30.4,15.8,19.7,15,21.4],"cyl":[6,6,4,6,8,6,8,4,4,6,6,8,8,8,8,8,8,4,4,4,4,8,8,8,8,4,4,4,8,6,8,4],"disp":[160,160,108,258,360,225,360,146.7,140.8,167.6,167.6,275.8,275.8,275.8,472,460,440,78.7,75.7,71.1,120.1,318,304,350,400,79,120.3,95.1,351,145,301,121],"hp":[110,110,93,110,175,105,245,62,95,123,123,180,180,180,205,215,230,66,52,65,97,150,150,245,175,66,91,113,264,175,335,109],"drat":[3.9,3.9,3.85,3.08,3.15,2.76,3.21,3.69,3.92,3.92,3.92,3.07,3.07,3.07,2.93,3,3.23,4.08,4.93,4.22,3.7,2.76,3.15,3.73,3.08,4.08,4.43,3.77,4.22,3.62,3.54,4.11],"wt":[2.62,2.875,2.32,3.215,3.44,3.46,3.57,3.19,3.15,3.44,3.44,4.07,3.73,3.78,5.25,5.424,5.345,2.2,1.615,1.835,2.465,3.52,3.435,3.84,3.845,1.935,2.14,1.513,3.17,2.77,3.57,2.78],"qsec":[16.46,17.02,18.61,19.44,17.02,20.22,15.84,20,22.9,18.3,18.9,17.4,17.6,18,17.98,17.82,17.42,19.47,18.52,19.9,20.01,16.87,17.3,15.41,17.05,18.9,16.7,16.9,14.5,15.5,14.6,18.6],"vs":[0,0,1,1,0,1,0,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1,0,1,0,0,0,1],"am":[1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1],"gear":[4,4,4,3,3,3,3,4,4,4,4,3,3,3,3,3,3,4,4,4,3,3,3,3,3,4,5,5,5,5,5,4],"carb":[4,4,1,1,2,1,4,2,2,4,4,3,3,3,4,4,4,1,2,1,1,2,2,4,2,1,2,2,4,6,8,2]},"x_axis":true,"y_axis":true,"baseline_accessor":null,"predictor_accessor":null,"show_confidence_band":null,"show_secondary_x_label":null,"chart_type":"point","xax_format":"plain","x_label":"Weight of Car","y_label":"Miles per Gallon","markers":null,"baselines":null,"linked":false,"title":null,"description":null,"left":80,"right":10,"bottom":60,"buffer":8,"format":"count","y_scale_type":"linear","yax_count":5,"xax_count":6,"x_rug":false,"y_rug":false,"area":false,"missing_is_hidden":false,"size_accessor":"carb","color_accessor":"carb","color_type":"number","color_range":["blue","red"],"size_range":[1,5],"bar_height":20,"min_x":null,"max_x":null,"min_y":null,"max_y":null,"bar_margin":1,"binned":false,"bins":null,"least_squares":false,"interpolate":"cardinal","decimals":2,"show_rollover_text":true,"x_accessor":"wt","y_accessor":"mpg","multi_line":null,"geom":"point","yax_units":"","legend":null,"legend_target":null,"y_extended_ticks":false,"x_extended_ticks":false,"target":"#mjs-ade5bd3e141e062cb8d26198563470"},"evals":[],"jsHooks":[]}</script>
+<p>If you inspect the CSS carefully you can see the CSS properties we added in the <a href="#id_###apply-new-fonts">apply new fonts section</a>.</p>
+<center>
+<img src="images/d3_axis_font_before.png" width="600" />
+</center>
+<p>That’s likely the behavior we’d want. That said, if we wanted to modify the font of the axises, for instance, we could add CSS properties to the classes of the htmlwidget like so. Many htmlwidget libraries provide tools to do this directly, for instance <code>metricsgraphics::mjs_add_css_rule()</code>, but it’s good to know how to do it directly in the Rmarkdown document as well because sometimes that’s necessary or easier.<br />
+</p>
+<pre class="css"><code>.mg-x-axis {
+  font-family: Homemade Apple;
+}
+.mg-y-axis {
+  font-family: Homemade Apple;
+}</code></pre>
+<center>
+<img src="images/d3_axis_font_after.png" width="600" />
+</center>
+<div id="css-conflicts" class="section level4">
+<h4>CSS Conflicts</h4>
+<p>Some htmlwidgets have generic CSS selectors that are in <code>main.css</code>, but no way to modify them through the library. An example I’ve bumped into in the past was the library <a href="">skimr</a>. These selectors were probably chosen intentionally to try to easily match site styles, but sometimes it doesn’t look great. To avoid those conflicts, throughout your entire <code>main.css</code> file you can use a prefix for the site. For example, you could change <code>.header</code> to <code>.site-header</code>.</p>
+<pre class="r"><code># Find and replace &quot;.header {&quot;  to &quot;.site-header {&quot;
+usethis::edit_file(main_css)</code></pre>
+<p>If you do that, you’ll have to find references of that class in your html partials. First, move the partial from the theme as we’ve mentioned before. <strong>WARNING, WE MODIFY THIS FILE SEVERAL PLACES. DO NOT RUN THIS CODE IF YOU ALREADY MOVED THIS FILE INTO YOUR PARTIALS FOLDER, IT WILL ERASE YOUR WORK!</strong></p>
+<pre class="r"><code>fs::file_copy(paste0(here::here(),&#39;/themes/hugo-lithium/layouts/partials/header.html&#39;), paste0(here::here(), &#39;/layouts/partials/header.html&#39;))</code></pre>
+<p>You’d need to modify <code>header.html</code> to the code below by changing the <code>&lt;header class="header"&gt;</code> to <code>&lt;header class="site-header"&gt;</code>.</p>
+<pre class="default"><code>&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;{{ .Site.LanguageCode }}&quot;&gt;
+  &lt;head&gt;
+    {{ partial &quot;head.html&quot; . }}
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div class=&quot;wrapper&quot;&gt;
+      &lt;header class=&quot;site-header&quot;&gt;
+        {{ partial &quot;nav.html&quot; . }}
+      &lt;/header&gt;
+</code></pre>
+</div>
+</div>
+<div id="add-multimedia" class="section level3">
+<h3>Add Multimedia<br />
+</h3>
+<p>Now, let’s move onto the really hard hitting content like emojis! :joy: As you’ve seen throughout this post there’s a lot of multimedia you can use on a page. Hugo provides support for a number of things that blogdown wraps directly like emojis, tweets, youtube, etc. Beyond Hugo and blogdown, there are several R libraries that can provide additional content such as <a href="https://rstudio.github.io/fontawesome/">fontawesome</a>.<br />
+</p>
+<p>I’m going to modify the about page to demonstrate a few of these tools, <code>content/about.md</code>. Notice the about page is a <code>.md</code> file not an <code>.Rmd</code> file. Vanilla <code>.md</code> files can be used for simple pages with just text, images, emojis, but they will not have access to R. I generally use <code>.Rmd</code> files for everything, but <code>.md</code> are less complex and render much more quickly so keep that in mind.<br />
+</p>
+<p>To demonstrate all the multimedia functionality that comes to mind, I’ll need an <code>.Rmd</code> file so delete the <code>.md</code> version (optional) and create <code>about.Rmd</code>. In <code>about.Rmd</code>, first we setup our yaml header. There are a number of options that can be set in the yaml header, refer to the <a href="https://bookdown.org/yihui/rmarkdown-cookbook/rmarkdown-anatomy.html">rmarkdown cookbook</a> for more details - these yaml headers provide a lot of customization features out of the box.<br />
+</p>
+<pre class="default"><code>---
+title: &quot;About&quot;
+---</code></pre>
+<p>Under our header we can start to create our about page. We can use Hugo’s built in <a href="https://www.webfx.com/tools/emoji-cheat-sheet/">emojis</a> in our sentences to insert emojis that are words wrapped in colons anywhere in the document. For these to work, we need to add a line to <code>config.yaml</code>.<br />
+</p>
+<center>
+<img src="images/enable_emojis.png" width="400" />
+</center>
+<p>The list of emojis supported by Hugo is small, but we can use the <a href="https://rstudio.github.io/fontawesome/">fontawesome package</a> to insert <a href="https://fontawesome.com/">fontawesome</a> emojis. To find new fontawesome icons search <a href="https://fontawesome.com/icons">here</a> or use <code>fontawesome::fa_metadata()</code>. Note the heart in the code below is an emoji in the Hugo supported syntax, since blogdown parses the entire document it will add emojis in code blocks as well.<br />
+</p>
+<pre class="r"><code>This is a blog I have created to share analytics with my team members. Although we have and :heart: Apache Superset &amp; shiny, sometimes I just want to quickly share analysis I perform in `fontawesome::fa(&quot;r-project&quot;, fill = &quot;steelblue&quot;)`.</code></pre>
+<p>Hugo has a <a href="https://gohugo.io/content-management/shortcodes/">shortcode</a> feature that allows users to pull in content from a number of platforms. The <code>blogdown::shortcode()</code> function is a wrapper to use it. It can be used to embed tweets, figures, youtube videos, gists, etc.<br />
+</p>
+<pre class="r"><code>blogdown::shortcode(&quot;youtube&quot;, &quot;2xkNJL4gJ9E&quot;)</code></pre>
+{{% youtube "2xkNJL4gJ9E" %}}
+<p>It can also be used for syntax highlighting languages which may not be supported by knitr.<br />
+</p>
+<pre class="r"><code>blogdown::shortcode(&quot;highlight&quot;, &quot;bash&quot;, .content = &quot;echo Thanks for visiting our new site!;&quot;)</code></pre>
+{{% highlight "bash" %}}
+echo Thanks for visiting our new site!;
+{{% /highlight %}}
+<p>You might be thinking, shortcode doesn’t support GIFs!?!@ Agreed, but don’t worrying GIFs are simple to add without using shortcode. They are an image and therefore work exactly like image files do. Add, <code>![&lt;my alt text&gt;](&lt;link to giph&gt;){&lt;add CSS properties}</code>, to a new line in your document - <strong>not in a code block</strong>. In the CSS properties you can add anything you want, but I typically use it to specify width like <code>{width=500px}</code>. If you want to center the image, one simple way is to just wrap the line in <code>&lt;center&gt; &lt;/center&gt;</code> tags. You can save the giph in a folder in the post folder, or just link to a direct url. Giphy provides <em>GIF Links</em> if you hit the share button.</p>
+<center>
+<img src="https://media.giphy.com/media/3o7ZeQBhbVGnELP4bK/giphy.gif" width="500" />
+</center>
+</div>
+<div id="markdown-formatting" class="section level3">
+<h3>Markdown Formatting</h3>
+<p>There are so many guides on markdown formatting and I’m guessing most users will already know a little so I’m going to cut this section short. If you’re new to markdown, checkout this <a href="https://www.markdownguide.org/basic-syntax">guide</a>. If you’re like me, you probably know markdown pretty well but always bump into weird pesky things. I’m going to cover a few little tricks I’ve picked up that I find myself looking up a lot.<br />
+</p>
+<div id="section-links" class="section level4">
+<h4>Section Links</h4>
+<p>Sometimes you want to refer a user to a prior section. Do this the same way you add a hyperlink, but replace spaces in the section name with hyphens. For example, to refer someone back to the beginning of this entire section I would use <code>[this](#build-a-site-from-scratch)</code>. which does <a href="#build-a-site-from-scratch">this</a>.<br />
+</p>
+</div>
+<div id="bullets" class="section level4">
+<h4>Bullets<br />
+</h4>
+<p>I often add bullets and the style looks terrible because markdown isn’t actually recognizing them as bullets. This is caused by two mistakes I commonly make: </p>
+<ul>
+<li>Keep one line between the paragraph above the bullets and the bullets themselves.<br />
+</li>
+<li>Make sure you end the above paragraph and each bullet with a <a href="#id_###linebreaks">linebreak</a>.<br />
+</li>
+</ul>
+</div>
+<div id="linebreaks" class="section level4">
+<h4>Linebreaks</h4>
+<p>According the markdown documentation:<br />
+</p>
+<blockquote>
+<p>CommonMark and a few other lightweight markup languages let you type a backslash () at the end of the line, but not all Markdown applications support this, so it isn’t a great option from a compatibility perspective.</p>
+</blockquote>
+<p>The markdown docs instead recommend using two spaces (which is impossible to see in the IDE) or <br> at the end of a line. I’ve gotten into the habit of using backslash, but <br> seems like a good option as well.</p>
+</div>
+</div>
+</div>
+<div id="other-styling-components" class="section level2">
+<h2>Other Styling &amp; Components<br />
+</h2>
+<div id="browser-tab-title-image" class="section level3">
+<h3>Browser Tab Title &amp; Image<br />
+</h3>
+<p>You may notice when you preview the site there’s a little <code>Li</code> logo and a title <code>A Hugo Website</code>.<br />
+</p>
+<center>
+<img src="images/browser_title_and_icon.png" width="200" />
+</center>
+<p>We can change the logo by creating a favicon logo and adding it. <a href="https://convertio.co/svg-ico/">This site</a> can convert images to icon files. Save the image in <code>/static</code> and add the appropriate reference to the config file. Also, change the text in the config file <code>title</code>.</p>
+<pre class="default"><code>title: DocStation Analytics
+params:
+  favicon: images/favicon.ico</code></pre>
+</div>
+<div id="code-folding" class="section level3">
+<h3>Code Folding<br />
+</h3>
+<p>This section modifies the Hugo theme substantially more so than the other sections up to this point. It seems like a lot more work, but it’s very simple. Just make sure to follow along and do <strong>all</strong> of the steps unless I specifically say they’re optional because, if you miss any, the code show/hide button might not show up at all which makes it harder to troubleshoot. I never would have figured out how to do this without <a href="https://statnmap.com/2017-11-13-enable-code-folding-in-bookdown-and-blogdown/">Sebastien Rochette’s work he published on his blog</a>, so thanks so much to him! I also want to thank James Pustejovsky who also used Sebastian’s post and did his own incredibly helpful <a href="https://www.jepusto.com/code-folding-update/#comment-5234356899">post</a>.</p>
+<div id="high-level-overview" class="section level4">
+<h4>High Level Overview</h4>
+<p>The codefoling is made possible by a JS function, we’ll call it <code>codefolding.js</code>, which searches each page for code based on the HTML classes assigned by blogdown. When it finds code, it wraps it in an HTML div and adds a button. The JS function collapses the div when the button is clicked. That JavaScript function needs to be available to the pages, which means it needs to be in the header or footer of each HTML page. Further, that function relies on other code from bootstrap and custom CSS which need to be loaded first.</p>
+</div>
+<div id="add-dependencies" class="section level4">
+<h4>Add Dependencies</h4>
+<p>Sebastian wrote his codefolding blog post using Bootstrap 3 relying on <code>collapse.js</code>, <code>dropdown.js</code>, and <code>transition.js</code>, the last of which was deprecated in Bootstrap 4. I’m not enough of a Bootstrap guru to know where that functionality lives in Bootstrap 4 and frankly didn’t want to bother working through that for this one feature on my site - so I just stuck with Bootstrap 3, it works just fine. Those bootstrap functions rely on jquery so you need to download that as well. Finally, we’ll need <a href="https://popper.js.org/">popper.js</a> to allow scrolling within our code boxes, but James’ post provided an API so we’ll just add it in our partials. For posterity, you can just download the <a href="https://github.com/twbs/bootstrap/blob/v3.4.0/dist/js/bootstrap.min.js">bootstrap.min.js</a> file, but I stuck with the three functions only since that’s all I needed.</p>
+<ul>
+<li><a href="https://github.com/twbs/bootstrap/tree/v3.4.1/js">Bootstrap 3 Latest Version</a></li>
+<li><a href="http://code.jquery.com">Jquery</a> - I used 3.6.1</li>
+</ul>
+<p>Add the JS files to the <code>static/js</code> folder. As we learned when changing the <a href="#id_##home-button">home button</a>, the <code>static/js</code> files will override the files inside <code>~/themes/hugo-lithium/static</code>. I this case, those files aren’t in <code>~/themes/hugo-lithium/static/images/logo.png</code> so they’re simply additive. Again, you only need the three specific files or <code>bootstrap.bundle.min.js</code>, not all four as shown below.<br />
+</p>
+<center>
+<img src="images/static_js_with_bs.png" width="350" />
+</center>
+<p>Aside from JS, we’ll also need some CSS to format the div around the code block and the button that controls it. Ideally, we’d just use a recent Bootstrap distribution like <a href="https://github.com/twbs/bootstrap/blob/v5.1.0/dist/css/bootstrap.css">this</a> <strong>which does work</strong>, but it conflicts with other parts of the theme - for me it knocked things out of place in the navbar. We’d need to modify our <code>main.css</code> to manage the conflicts between that file and the boostrap file which could be a lot more work than just creating a custom CSS file for the code folding, which is what I decided to do. Copy the code below and save it at <code>~/static/css/codefolding.css</code>. If you want to make your button look different (e.g. different color, hovering behavior, etc.), this is the place to do that.</p>
+<pre class="css"><code>#code-folding-buttons {float: right;}
+#code-folding-buttons .pull-right &gt; .dropdown-menu {
+    right: 0;
+    left: auto;
+}
+#code-folding-buttons .btn.btn-default.btn-xs.dropdown-toggle {
+    float: right;
+}
+#code-folding-buttons.open &gt; .dropdown-menu {
+    display: block;
+}
+#code-folding-buttons .dropdown-menu li {
+    padding: 5px;
+}
+
+/* Each code block button */
+.code-folding-btn { 
+  margin-right: 10px;
+  margin-bottom: 4px; 
+  width: 125%;
+  background: #fff;
+  border-top: #252525 1px solid;
+  border-bottom: #252525 1px solid;
+  border-left: #252525 2px solid;
+  border-right: #252525 2px solid;
+  border-radius: 10px;
+  text-align: center;
+  color: black;
+  padding: 6px;
+  float: right;
+  font-family: Rubik;
+  font-size: .75rem;
+  font-weight: 400;
+}
+
+.code-folding-btn:hover { 
+  background: #252525;
+  border-top: #fff 1px solid;
+  border-bottom: #fff 1px solid;
+  border-left: #fff 2px solid;
+  border-right: #fff 2px solid;
+  color: white;
+  font-family: Rubik;
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+.row { 
+    display: flex;
+    border-bottom: solid 1px #d7d7d7;
+}
+.col-md-12 {
+    margin: 0 0 0 auto;
+}
+
+.collapse {
+    display: none; 
+}
+.in { 
+    display: block ;
+    border: solid 1px #d7d7d7;
+    border-radius: 5px;
+}
+
+/* Main show/hide button */
+#code-folding-buttons {float: right;}
+
+#code-folding-buttons .dropdown-menu {
+    min-width: 80px;
+    padding: 5px 0;
+    margin: 2px 0 0;
+    font-size: 14px;
+}</code></pre>
+</div>
+<div id="add-modify-partials" class="section level4">
+<h4>Add Modify Partials</h4>
+<p>Now that we have dependencies in place, we need to add the necessary HTML partials so that the dependencies are added when the site is rendered by Hugo. You can structure your partials however you want, but each theme generally has things structured a certain way that might be easy to piggy back off of. Below is some R code to copy files from the existing theme (hugo-lithium specific) and create new files we need.</p>
+<pre class="r"><code>fs::file_touch(paste0(here::here(), &#39;/layouts/partials/header_maincodefolding.html&#39;))
+fs::file_copy(paste0(here::here(),&#39;/themes/hugo-lithium/layouts/partials/head_custom.html&#39;), paste0(here::here(), &#39;/layouts/partials/head_custom.html&#39;))
+fs::file_copy(paste0(here::here(),&#39;/themes/hugo-lithium/layouts/partials/header.html&#39;), paste0(here::here(), &#39;/layouts/partials/header.html&#39;))</code></pre>
+<p>Notice partials have if statements in them, such as <code>{{ if eq .RelPermalink "/" }} ... {{ else }}{{ if .Description }} ... {{ end }}{{ end }}</code>. These if statements reference variables in <code>config.yaml</code>, it’s how the <code>config.yaml</code> is able to parameterize a Hugo site. When the site is rendered, Hugo reads the yaml and includes HTML partials based on the if statements. I actually don’t use parameters for my codefolding, but Sebastien set them up in his post and I left them in here for people who may want them - and to just better illustrate how Hugo works. You can completely remove all the if statements in the partials we create and leave the parameters off of the config file if you like. </p>
+<div id="header_alldoc_codefolding_button.html" class="section level5">
+<h5>header_alldoc_codefolding_button.html</h5>
+<p><strong>Optionally</strong>, Sebastien added a code folding button at the top of all posts which can show or hide code throughout the document. It looks like the screenshot below:<br />
+</p>
+<center>
+<img src="images/alldoc_codefolding_button_seb_site.png" width="550" />
+</center>
+<p>I decided to leave this off of my site because I don’t like putting it in the navbar and it just felt clunky at the top of the doc. I would want to modify the navbar and use an icon in the top right, but didn’t seem worth the work. This is the html partial to do that though which I called <code>header_alldoc_codefolding_button.html</code>. You can copy it either way if you like, it won’t be rendered unless it’s added to another partial file.<br />
+</p>
+<pre class="default"><code>{{ if and (not .Site.Params.disable_codefolding) (not .Params.disable_codefolding) (in (string .Content) &quot;&lt;/pre&gt;&quot;) }}
+&lt;div id=&quot;code-folding-buttons&quot; class=&quot;btn-group pull-right&quot;&gt;
+  &lt;button type=&quot;button&quot; class=&quot;btn btn-default btn-xs dropdown-toggle&quot; data-toggle=&quot;dropdown&quot; aria-haspopup=&quot;true&quot; aria-expanded=&quot;true&quot; data-_extension-text-contrast=&quot;&quot;&gt;
+    &lt;span&gt;Show/Hide all code&lt;/span&gt; 
+    &lt;span class=&quot;caret&quot;&gt;&lt;/span&gt;
+  &lt;/button&gt;
+  &lt;ul class=&quot;dropdown-menu&quot; style=&quot;min-width: 50px;&quot;&gt;
+  &lt;li&gt;&lt;a id=&quot;rmd-show-all-code&quot; href=&quot;#&quot;&gt;Show All Code&lt;/a&gt;
+  &lt;/li&gt;&lt;li&gt;&lt;a id=&quot;rmd-hide-all-code&quot; href=&quot;#&quot;&gt;Hide All Code&lt;/a&gt;&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/div&gt;
+{{ end }}</code></pre>
+</div>
+<div id="head_custom.html" class="section level5">
+<h5>head_custom.html</h5>
+<p>The lithium template has a <code>head_custom.html</code> file by default, which is empty. It’s already loaded into the site so we don’t have to modify / create as many partials to implement our code folding by using it. We can use this to load dependencies into the site’s header. First, we’ll load the jquery, bootrap, and popper.js dependencies. Next, we load <code>codefolding.js</code> and <code>codefolding.css</code>. Finally, we can run <code>codefolding.js</code> (i.e. within <code>$(document).ready</code>). If you don’t plan to use <code>config.yaml</code> to disable code folding on certain posts you can omit the if statements.<br />
+</p>
+<pre class="default"><code>{{ if not .Site.Params.disable_codefolding }}
+&lt;script src=&quot;{{ &quot;js/jquery-3.6.0.min.js&quot; | relURL }}&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;{{ &quot;js/transition.js&quot; | relURL }}&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;{{ &quot;js/collapse.js&quot; | relURL }}&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;{{ &quot;js/dropdown.js&quot; | relURL }}&quot;&gt;&lt;/script&gt;
+  &lt;script src=&quot;https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js&quot;&gt;&lt;/script&gt;
+{{ end }}
+{{ if and (not .Site.Params.disable_codefolding) (not .Params.disable_codefolding) (in (string .Content) &quot;&lt;/pre&gt;&quot;) }} 
+
+&lt;script src=&quot;{{ &quot;js/codefolding.js&quot; | relURL }}&quot;&gt;&lt;/script&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;{{ &quot;css/codefolding.css&quot; | relURL }}&quot; /&gt;
+&lt;script&gt;
+$(document).ready(function () {
+  window.initializeCodeFolding(&quot;show&quot; === {{ if isset .Params &quot;codefolding_show&quot; }}{{ .Params.codefolding_show }}{{ else }}{{ default (&quot;hide&quot;) .Site.Params.codefolding_show }}{{ end }});
+});
+&lt;/script&gt;
+{{ end }}</code></pre>
+<p>The <code>head_custom.html</code> partial is pulled into the <code>~/themes/hugo-lithium/layouts/partials/head.html</code> partial, which we don’t need to modify or move out of themes. It’s loaded on the last line below with no if statement (i.e. it’s always loaded).<br />
+</p>
+<center>
+<img src="images/head_load_head_custom.png" width="550" />
+</center>
+</div>
+<div id="header.html" class="section level5">
+<h5>header.html<br />
+</h5>
+<p>The aforementioned <code>head.html</code>, and by extension <code>head_custom.html</code>, are loaded into <code>header.html</code> (these names are a bit tough to keep straight). There’s no need to make changes to <code>header.html</code> unless you wanted to add the <a href="#id_####header_alldoc_codefolding_button.html">button to collapse and show all code</a>, which is included below.<br />
+</p>
+<pre class="default"><code>&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;{{ .Site.LanguageCode }}&quot;&gt;
+  &lt;head&gt;
+    {{ partial &quot;head.html&quot; . }}
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div class=&quot;wrapper&quot;&gt;
+      &lt;header class=&quot;header&quot;&gt;
+        &lt;!-- Add this if you want the butto to callapse and show all code on a page --&gt; 
+        {{ partial &quot;header_alldoc_codefolding_button.html&quot; . }}
+        {{ partial &quot;nav.html&quot; . }}
+      &lt;/header&gt;</code></pre>
+</div>
+</div>
+<div id="setup-config" class="section level4">
+<h4>Setup Config</h4>
+<p>If you included the if statements in the partials, add these parameters to <code>config.yaml</code> at level 1 (i.e. not nested underneath anything in the file).<br />
+</p>
+<pre class="default"><code># Set to true to disable code folding
+disable_codefolding: false
+# Set to &quot;hide&quot; or &quot;show&quot; all codes by default
+codefolding_show: hide
+codefolding_nobutton: true</code></pre>
+<p>And voila, you have code folding!<br />
+</p>
+<center>
+<img src="https://media.giphy.com/media/1BFEEIo4h1BuTH8eqP/giphy.gif" width="400" />
+</center>
+<p>Pages with code should now have a button beside the code which will expand and collapse the code.<br />
+</p>
+<center>
+<img src="images/code_folding.gif" width="500" />
+</center>
+</div>
+</div>
+<div id="add-links-to-footer" class="section level3">
+<h3>Add Links to Footer</h3>
+<p>The lithium template comes with a standard footer on every page. The footer is added into the bottom of every page from the HTML partial <code>footer.html</code>. We can modify the footer to include personal info that shows up at the bottom of all pages on our site.<br />
+</p>
+<center>
+<img src="images/theme_footer.png" width="500" />
+</center>
+<p>Move the footer file from the theme into our partials folder.<br />
+</p>
+<pre class="r"><code>fs::file_copy(paste0(here::here(),&#39;/themes/hugo-lithium/layouts/partials/footer.html&#39;), paste0(here::here(), &#39;/layouts/partials/footer.html&#39;))</code></pre>
+<div id="footer.html" class="section level4">
+<h4>footer.html<br />
+</h4>
+<p>I don’t use RSS feed at the moment, so I removed that. I might add it back at some point if I can get into a better groove with posting. I added an email, github, twitter, linkedin, and a credit to the blogdown repo. </p>
+<pre class="default"><code>      &lt;footer class=&quot;footer&quot;&gt;
+        &lt;ul class=&quot;footer-links&quot;&gt;
+          {{ with .Site.Params.social }}
+          &lt;li&gt;
+            &lt;a href=&quot;mailto: mark.druffel@gmail.com&quot; class=&quot;fa fa-envelope &quot; aria-hidden=&quot;true&quot; title=&quot;Email&quot;&gt;&lt;/i&gt;&lt;span class=&quot;sr-only&quot;&gt;Github&lt;/span&gt;&lt;/a&gt;
+          &lt;/li&gt;
+          &lt;li&gt;
+            &lt;a href=&quot;https://github.com/{{ .github }}&quot;&gt;&lt;i class=&quot;fa fa-github&quot; aria-hidden=&quot;true&quot; title=&quot;Github&quot;&gt;&lt;/i&gt;&lt;span class=&quot;sr-only&quot;&gt;Github&lt;/span&gt;&lt;/a&gt;
+          &lt;/li&gt;
+          &lt;li&gt;
+            &lt;a href=&quot;https://twitter.com/{{ .twitter }}&quot;&gt;&lt;i class=&quot;fa fa-twitter&quot; aria-hidden=&quot;true&quot; title=&quot;Twitter&quot;&gt;&lt;/i&gt;&lt;span class=&quot;sr-only&quot;&gt;Twitter&lt;/span&gt;&lt;/a&gt;
+          &lt;/li&gt;
+          &lt;li&gt;
+            &lt;a href=&quot;https://www.linkedin.com/in/{{ .linkedin }}&quot;&gt;&lt;i class=&quot;fa fa-linkedin&quot; aria-hidden=&quot;true&quot; title=&quot;LinkedIn&quot;&gt;&lt;/i&gt;&lt;span class=&quot;sr-only&quot;&gt;LinkedIn&lt;/span&gt;&lt;/a&gt;
+          &lt;/li&gt;
+          {{ end }}
+          &lt;li&gt;
+            &lt;a href=&quot;https://gohugo.io/&quot; class=&quot;footer-links-kudos&quot;&gt;Made with &lt;img src=&quot;{{ &quot;images/hugo-logo.png&quot; | relURL }}&quot; alt=&quot;Img link to Hugo website&quot; width=&quot;22&quot; height=&quot;22&quot;&gt;&lt;/a&gt;
+          &lt;/li&gt;
+          &lt;li&gt;
+            &lt;a href=&quot;https://bookdown.org/yihui/blogdown/&quot; class=&quot;footer-links-kudos&quot;&gt;Via &lt;img src=&quot;{{ &quot;images/blogdown-logo.png&quot; | relURL }}&quot; width=&quot;22&quot; height=&quot;22&quot;&gt;&lt;/a&gt;
+          &lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/footer&gt;
+    &lt;/div&gt;
+    {{ partial &quot;footer_highlightjs&quot; . }}
+    {{ partial &quot;footer_mathjax&quot; . }}
+    {{ template &quot;_internal/google_analytics.html&quot; . }}
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<p>If you render the site with this partial you’ll end up with this footer, which is really ugly. The reason is we referenced <a href="https://fontawesome.com/">font awesome</a> logos in the <code>footer.html</code> partial so we need font awesome to render the logos. We need to add a font awesome dependency in the site header or footer to do that.<br />
+</p>
+<center>
+<img src="images/footer_without_fa.png" width="500" />
+</center>
+</div>
+<div id="head_custom.html-1" class="section level4">
+<h4>head_custom.html<br />
+</h4>
+<p><strong>WARNING, WE MODIFY THIS FILE SEVERAL PLACES. DO NOT RUN THIS CODE IF YOU ALREADY MOVED THIS FILE INTO YOUR PARTIALS FOLDER, IT WILL ERASE YOUR WORK!</strong> The lithium template has a <code>head_custom.html</code> file by default, which is empty. It’s already loaded into the site so we don’t have to modify / create as many partials to implement our code folding by using it. We can use this to load dependencies into the site’s header.<br />
+</p>
+<pre class="r"><code>fs::file_copy(paste0(here::here(),&#39;/themes/hugo-lithium/layouts/partials/head_custom.html&#39;), paste0(here::here(), &#39;/layouts/partials/head_custom.html&#39;))</code></pre>
+<p>At the top of <code>head_custom.html</code>, add this line. The <a href="https://www.w3schools.com/tags/att_script_async.asp">async</a> part of the code keeps the site from loading slowly when font awesome doesn’t respond instantaneously.<br />
+</p>
+<pre class="default"><code>&lt;script async src=&quot;https://use.fontawesome.com/32c3d13def.js&quot;&gt;&lt;/script&gt;</code></pre>
+<p>Now the footer looks better, but it’s still missing the image at the end. That’s the blogdown package logo which I added manually since it’s not in font awesome. Add the required <a href="https://github.com/rstudio/blogdown/blob/main/pkgdown/favicon">image</a> to <code>~/static/images</code> and make sure the name matches the filename in the HTML partial <code>footer.html</code>.<br />
+</p>
+<center>
+<img src="images/footer_with_fa.png" width="500" />
+</center>
+<p>Once you add the blogdown logo file, the footer should look like this. </p>
+<center>
+<img src="images/footer_with_all.png" width="500" />
+</center>
+</div>
+</div>
+<div id="misc-configs" class="section level3">
+<h3>Misc Configs<br />
+</h3>
+<p>There are so many configurations you can use in the lithium theme and even more throughout Hugo.<br />
+</p>
+<div id="disqusshortname" class="section level5">
+<h5>disqusShortname<br />
+</h5>
+<p>Disqus is a simple way to add a comments box on your site. Disqus has helped me engage with other data scientists through their sites which is a super simple way to connect with other people in the profession. It’s so simple, I highly recommend it. To use Disqus on your site, you need to create an account and then <a href="https://disqus.com/admin/create/">create a new site</a> on that account. When you create a site, you give it a shortname which you can then add to the <code>config.yaml</code>.<br />
+</p>
+<pre class="default"><code>baseurl: /
+languageCode: en-us
+title: DocStation Analytics
+theme: hugo-lithium
+googleAnalytics: &#39;&#39;
+disqusShortname: &#39;add the name here&#39;</code></pre>
+</div>
+<div id="canonifyurls" class="section level5">
+<h5>canonifyURLs<br />
+</h5>
+<p>Tells Hugo to use <a href="https://gohugo.io/content-management/urls/#canonicalization">canonical urls</a>.<br />
+</p>
+<pre class="default"><code>baseurl: /
+languageCode: en-us
+title: DocStation Analytics
+theme: hugo-lithium
+googleAnalytics: &#39;&#39;
+canonifyURLs: true</code></pre>
+</div>
+<div id="enablerobotstxt" class="section level5">
+<h5>enableRobotsTXT<br />
+</h5>
+<p>Tells Hugo to use a <a href="https://gohugo.io/templates/robots/">custom robots.txt file</a>, which tells bots how to interact with your site. Learn more <a href="https://www.cloudflare.com/learning/bots/what-is-robots.txt/">here</a>. To modify the robots.txt file, add the below code to the <code>config.yaml</code>.<br />
+</p>
+<pre class="default"><code>baseurl: /
+languageCode: en-us
+title: DocStation Analytics
+theme: hugo-lithium
+googleAnalytics: &#39;&#39;
+enableRobotsTXT: true</code></pre>
+<p>Then create a new robots.txt file at <code>~/layouts/robots.txt</code>.<br />
+</p>
+</div>
+</div>
+</div>
+<div id="deploy-w-hosting-service" class="section level2">
+<h2>Deploy w/ Hosting Service<br />
+</h2>
+<p>You can deploy a blogdown site to an endless number of services including Netlify, Github Pages, Cloudflare, AWS S3, etc. I’m not going to document deployment because it’s so well documented elsewhere, but explain the first two options below. </p>
+<div id="netlify" class="section level3">
+<h3>Netlify<br />
+</h3>
+<p>I get the impression that Netlify is the most popular place to host a blogdown. It’s to setup CI/CD with Github and Netlify has domain services so you can register your own custom domain in the same place. It’s what I use for my personal site. That said, if you want to set your site up with Netlify I’m going to hand you off to Alison because her <a href="https://apreshill.netlify.app/blog/2020-12-new-year-new-blogdown/#step-1-create-repo">up &amp; running with blogdown in 2021 post</a> provides a flawless step-by-step. There’s simply no reason to replicate here. </p>
+</div>
+<div id="github-pages" class="section level3">
+<h3>Github Pages<br />
+</h3>
+<p>Github pages seems to be a close second in popularity from what I’ve seen. It’s even simpler than netlify, but you cannot use a <a href="https://docs.github.com/en/enterprise-cloud@latest/pages/configuring-a-custom-domain-for-your-github-pages-site">custom domain without a premium account</a>. Again, I’m going to outsource the guide on this approach because it’s so simple and already well documented in the <a href="https://bookdown.org/yihui/blogdown/github-pages.html">blogdown book</a>.<br />
+</p>
+</div>
+</div>
+<div id="deploy-internally-w-docker" class="section level2">
+<h2>Deploy Internally w/ Docker </h2>
+<p>As I mentioned, I host my personal site on Netlify - it’s been very cheap and easy to use. However, I want to publish an internal blog at work that needs to be secured. Netlify requires an enterprise account to use oauth, and their <a href="https://answers.netlify.com/t/pricing-change-questions-what-are-team-members/">new pricing model</a> would be cost prohibitive for a small startup. Further, because we work with health data we use a service called <a href="https://www.aptible.com/">Aptible</a> that makes HIPPA compliance and auditing much simpler. Given that, I need to host my blogdown site in a Docker container. Given the length of this post and the specialized circumstances of wanting to host a blogdown site on Docker, I decided to leave that for a separate post which I’ll link to here when it’s up.</p>
+</div>
+</div>
