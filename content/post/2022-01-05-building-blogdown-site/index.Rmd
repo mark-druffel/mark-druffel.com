@@ -81,7 +81,7 @@ We could probably take this pretty far, but I'll cover one more CSS change. We c
 While we're building our site we'll want to test that it works. RStudio has a viewer pane that's closest to development, which I love. However, there are always little differences that can pop up between what we see in RStudio and what shows up in the browser when it gets there. I recommend testing in a browser often. I use [Brave](https://brave.com/) as my primary web browser, but I also use Chrome and Safari to test my pages during web development because most users will likely be in one of the two.\  
 
 <center>
-![New Project](images/most_popular_browsers.png){width=600px} 
+![](images/most_popular_browsers.png){width=600px} 
 </center>
 
 Beyond that, I also like to do a little bit of device testing. I don't expect I have a ton of mobile users, but I still don't want to have an awful mobile experience if I can help it. I use a tool called [LT Browser](https://www.lambdatest.com/lt-browser) to quickly see how the site will look on various devices.\ 
